@@ -1,0 +1,12 @@
+name: example
+version: 1.0.0
+description: Reviews repositories for a focused example concern.
+runtime:
+  name: node
+  version: "22"
+  command: [dist/missing.js]
+permissions:
+  filesystem: { read: ["."], write: [] }
+  network: false
+findings: { format: adversary.review.v1 }
+

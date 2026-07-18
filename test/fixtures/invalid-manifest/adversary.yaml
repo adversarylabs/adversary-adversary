@@ -1,0 +1,9 @@
+name: Example Bad
+version: latest
+unknown: true
+runtime:
+  name: shell
+  command: []
+findings:
+  format: sarif
+

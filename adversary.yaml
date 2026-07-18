@@ -1,0 +1,33 @@
+name: adversary
+version: 0.1.0
+description: Reviews TypeScript adversaries for SDK usage, rule design, finding quality, tests, packaging, and publish readiness.
+
+triggers:
+  manual: true
+  files_changed:
+    - "adversary.yaml"
+    - "package.json"
+    - "tsconfig.json"
+    - "src/**/*.ts"
+    - "test/**"
+    - "tests/**"
+    - ".adversaryignore"
+
+runtime:
+  name: node
+  version: "22"
+  command:
+    - dist/index.js
+
+permissions:
+  enforcement: advisory
+  filesystem:
+    read:
+      - .
+    write: []
+  network: false
+  environment:
+    allow: []
+
+findings:
+  format: adversary.review.v1
