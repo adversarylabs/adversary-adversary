@@ -1,6 +1,7 @@
 node_modules/
 dist/
+!test/fixtures/good/dist/
+!test/fixtures/good/dist/**
 coverage/
 .DS_Store
 *.log
-
