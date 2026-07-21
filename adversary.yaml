@@ -13,6 +13,17 @@ triggers:
     - "tests/**"
     - ".adversaryignore"
 
+detection:
+  files:
+    - "adversary.yaml"
+    - ".adversaryignore"
+    - "package.json"
+    - "tsconfig.json"
+    - "Dockerfile"
+    - "src/**/*.ts"
+    - "test/**/*.ts"
+    - "tests/**/*.ts"
+
 runtime:
   name: node
   version: "22"

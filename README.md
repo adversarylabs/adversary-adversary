@@ -81,3 +81,7 @@ The adversary emits structured observations only. The SDK owns synthesis, groupi
 The implementation uses conservative source-pattern analysis rather than a full TypeScript semantic program. It only reports clear legacy APIs, direct presentation, dependency, evidence, confidence, and grouping patterns. It does not attempt prose scoring, numerical code coverage, arbitrary build execution, or proof of complete least privilege.
 
 These boundaries keep the first release useful for dogfooding while avoiding generic TypeScript-linter behavior.
+
+## Automatic detection
+
+`adversary auto` selects the adversary adversary when changes include `adversary.yaml` or `.adversaryignore`, plus the other domain-specific patterns declared in `adversary.yaml`. Unrelated changes do not select it.
