@@ -10,6 +10,7 @@ import {
 } from "@adversarylabs/sdk";
 import modelSchema from "../schema/adversary-review.model.v1.schema.json" with { type: "json" };
 import type { AdversaryProject, Detection, SourceFile } from "./model.js";
+import { reviewDecision, riskRank } from "./review-decision.js";
 import { severity } from "./rules/definitions.js";
 
 const MAX_SOURCES = 20;
@@ -242,12 +243,10 @@ The previous response cited text that was not present in the selected evidence. 
 
   const bounded = modelObservations.bounded;
   const accepted = modelObservations.prepared.map((item) => item.observation);
-  const staticRisk = maxRisk(detections.map((item) => severity(item.ruleId)));
-  const modelRisk = maxRisk(accepted.map((item) => item.severity));
-  const risk = maxRisk([staticRisk, modelRisk]);
-  const blocking = riskRank(staticRisk) >= riskRank("medium") ||
-    accepted.some((item) => riskRank(item.severity) >= riskRank("medium"));
-  const ship = !blocking;
+  const { risk, ship } = reviewDecision([
+    ...detections.map((item) => severity(item.ruleId)),
+    ...accepted.map((item) => item.severity),
+  ]);
   const observationsWereRejected = bounded.length <
     Math.min(output.observations.length, MAX_MODEL_OBSERVATIONS);
   const summary = observationsWereRejected && accepted.length === 0
@@ -538,17 +537,6 @@ function sourcePriority(path: string): number {
   if (path.startsWith("src/")) return 3;
   if (path.startsWith("test/") || path.startsWith("tests/")) return 4;
   return 5;
-}
-
-function maxRisk(
-  risks: Array<"none" | "low" | "medium" | "high" | "critical">,
-): "none" | "low" | "medium" | "high" | "critical" {
-  return risks.reduce((best, current) =>
-    riskRank(current) > riskRank(best) ? current : best, "none");
-}
-
-function riskRank(risk: "none" | "low" | "medium" | "high" | "critical"): number {
-  return { none: 0, low: 1, medium: 2, high: 3, critical: 4 }[risk];
 }
 
 function staticConcern(detections: Detection[]): string | undefined {

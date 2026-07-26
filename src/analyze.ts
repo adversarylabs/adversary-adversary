@@ -1,5 +1,6 @@
 import { formatOpinion, type RuleContext } from "@adversarylabs/sdk";
 import { type AdversaryProject, type Detection } from "./model.js";
+import { reviewDecision } from "./review-decision.js";
 import { observation, severity } from "./rules/definitions.js";
 import { packageDetections } from "./rules/package.js";
 import { projectDetections } from "./rules/project.js";
@@ -42,23 +43,23 @@ function positives(ctx: RuleContext, project: AdversaryProject, detections: Dete
 }
 
 export function applyDeterministicAssessment(ctx: RuleContext, detections: Detection[]): void {
-  const rank = { low: 1, medium: 2, high: 3 } as const;
-  let risk: "none" | "low" | "medium" | "high" = "none";
-  for (const item of detections) { const level = severity(item.ruleId); if (rank[level] > (risk === "none" ? 0 : rank[risk])) risk = level; }
+  const { risk, ship } = reviewDecision(
+    detections.map((item) => severity(item.ruleId)),
+  );
+  let summary: string;
   if (risk === "none") {
-    ctx.review.assessment({ risk, summary: "The project uses the current SDK model, has credible behavioral tests, and is ready for deterministic packaging." });
-    ctx.review.opinion(formatOpinion({ ship: true, change: ctx.change }));
+    summary = "The project uses the current SDK model, has credible behavioral tests, and is ready for deterministic packaging.";
   } else if (risk === "low") {
-    ctx.review.assessment({ risk, summary: "The adversary is structurally sound, with a small number of rule-quality, test, permission, or metadata improvements available." });
-    ctx.review.opinion(formatOpinion({ ship: true, change: ctx.change }));
+    summary = "The adversary is structurally sound, with a small number of rule-quality, test, permission, or metadata improvements available.";
   } else {
-    ctx.review.assessment({ risk, summary: "SDK, manifest, build, dependency, or package-contract issues prevent a confident publication." });
-    ctx.review.opinion(formatOpinion({
-      ship: false,
-      concern: primaryConcern(detections),
-      change: ctx.change,
-    }));
+    summary = "SDK, manifest, build, dependency, or package-contract issues prevent a confident publication.";
   }
+  ctx.review.assessment({ risk, summary });
+  ctx.review.opinion(formatOpinion({
+    ship,
+    ...(ship ? {} : { concern: primaryConcern(detections) }),
+    change: ctx.change,
+  }));
 }
 
 function primaryConcern(detections: Detection[]): string {
