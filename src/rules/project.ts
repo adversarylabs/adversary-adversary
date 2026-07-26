@@ -38,12 +38,13 @@ function identity(project: AdversaryProject): Detection[] {
 function build(project: AdversaryProject): Detection[] {
   const result: Detection[] = [];
   const pkg = project.package;
-  if (!pkg?.scripts.build) {
+  const hasBuild = Boolean(pkg?.scripts.build);
+  if (!hasBuild) {
     const line = packageLine(project, '"scripts"');
     result.push(detection("adversary.typescript.build.output", "build-script", "build", "package.json", line, packageSnippet(project, line), "package.json has no build script", { expected: "a deterministic TypeScript build command" }));
   }
   const entrypoint = project.manifest.entrypoint;
-  if (entrypoint) {
+  if (entrypoint && !hasBuild) {
     const built = project.files.find((file) => file.path === entrypoint);
     if (built === undefined) {
       const source = project.manifest.source?.content ?? "";
@@ -52,7 +53,7 @@ function build(project: AdversaryProject): Detection[] {
     } else {
       const newer = project.sourceFiles.filter((file) => file.mtimeMs > built.mtimeMs + 1000);
       const distIntended = project.files.some((file) => file.path.startsWith("dist/"));
-      if (distIntended && newer.length > 0) result.push(detection("adversary.typescript.build.output", entrypoint, "build", newer[0]?.path ?? entrypoint, 1, snippetAt(newer[0]?.content ?? "", 1), `${newer.length} source file(s) are newer than the declared build output`, { entrypoint, newerSources: newer.slice(0, 10).map((file) => file.path) }));
+      if (distIntended && newer.length > 0) result.push(detection("adversary.typescript.build.output", entrypoint, "build", newer[0]?.path ?? entrypoint, 1, snippetAt(newer[0]?.content ?? "", 1), `${newer.length} source file(s) are newer than the declared build output and no release build is configured`, { entrypoint, newerSources: newer.slice(0, 10).map((file) => file.path) }));
     }
   }
   return result;
