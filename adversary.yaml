@@ -37,6 +37,7 @@ permissions:
       - .
     write: []
   network: false
+  model: true
   environment:
     allow: []
 
