@@ -251,7 +251,7 @@ The previous response cited text that was not present in the selected evidence. 
   const observationsWereRejected = bounded.length <
     Math.min(output.observations.length, MAX_MODEL_OBSERVATIONS);
   const summary = observationsWereRejected && accepted.length === 0
-    ? "No material current adversary-quality concern was supported by the prepared evidence."
+    ? synthesizedAssessment(accepted, detections)
     : isSubstantive(output.assessment.summary, 30, 1_500)
       ? output.assessment.summary
       : synthesizedAssessment(accepted, detections);

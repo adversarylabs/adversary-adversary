@@ -95,7 +95,7 @@ test("hybrid review sends deterministic evidence and emits a grounded product fi
   }
 });
 
-test("material deterministic findings veto a model ship decision", async () => {
+test("material deterministic findings remain visible when model observations are rejected", async () => {
   const root = await mkdtemp(join(tmpdir(), "adversary-model-veto-"));
   try {
     await cp(join(fixtures, "good"), root, { recursive: true });
@@ -111,7 +111,22 @@ test("material deterministic findings veto a model ship decision", async () => {
               summary: "No model-only concerns.",
               primaryConcern: "",
             },
-            observations: [],
+            observations: [{
+              id: "no-action",
+              title: "No manifest action required",
+              category: "manifest-quality",
+              severity: "low",
+              confidence: "high",
+              summary: "There is no current defect that warrants a separate model-backed manifest finding.",
+              whyItMatters: "Reviewers should avoid duplicating deterministic manifest findings with weaker model commentary.",
+              recommendation: "No change is needed for this model observation because deterministic validation already owns it.",
+              evidence: [{
+                evidenceId: "adversary.yaml",
+                line: 1,
+                detail: "The manifest is already covered by deterministic validation.",
+                quote: "name: Example Bad",
+              }],
+            }],
             strengths: [],
           } as T,
           provider: "fixture",
@@ -125,6 +140,7 @@ test("material deterministic findings veto a model ship decision", async () => {
       model,
     });
     assert.equal(result.assessment?.risk, "high");
+    assert.match(result.assessment?.summary ?? "", /invalid adversary manifest/);
     assert.equal(result.opinion?.ship, false);
   } finally {
     await rm(root, { recursive: true, force: true });
