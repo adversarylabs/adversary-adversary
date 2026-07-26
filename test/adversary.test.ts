@@ -129,8 +129,16 @@ test("missing clean, rule coverage, and grouping regressions are detected", asyn
   await finding("missing-grouping-test", "adversary.typescript.tests.grouping");
 });
 
-test("missing build output is detected", async () => {
-  await finding("stale-build", "adversary.typescript.build.output");
+test("release-built entrypoints are not required in the source checkout", async () => {
+  const output = await review("stale-build");
+  assert.equal(
+    output.findings.some((item) => item.ruleId === "adversary.typescript.build.output"),
+    false,
+  );
+});
+
+test("a missing release build command is detected", async () => {
+  await finding("missing-build-script", "adversary.typescript.build.output");
 });
 
 test("unsafe package contents and runtime dependency gaps are detected", async () => {
