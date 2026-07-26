@@ -87,24 +87,20 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "evidenceId": {
-                  "description": "Exact evidence ID or included source path.",
+                "citationId": {
+                  "description": "Exact prepared citation ID from deterministicSignals or citations.",
                   "type": "string"
                 },
                 "line": {
-                  "description": "Best 1-based line estimate; the exact quote anchors the final location.",
+                  "description": "A 1-based line within the selected citation's inclusive startLine and endLine.",
                   "type": "integer"
                 },
                 "detail": {
                   "description": "How this citation supports the observation.",
                   "type": "string"
-                },
-                "quote": {
-                  "description": "Short exact text copied from the cited source or deterministic signal.",
-                  "type": "string"
                 }
               },
-              "required": ["evidenceId", "line", "detail", "quote"]
+              "required": ["citationId", "line", "detail"]
             }
           }
         },
@@ -132,15 +128,15 @@
             "description": "Concrete strength demonstrated by prepared evidence.",
             "type": "string"
           },
-          "evidenceIds": {
-            "description": "Supporting evidence IDs or source paths.",
+          "citationIds": {
+            "description": "Supporting prepared citation IDs.",
             "type": "array",
             "items": {
               "type": "string"
             }
           }
         },
-        "required": ["summary", "evidenceIds"]
+        "required": ["summary", "citationIds"]
       }
     }
   },
