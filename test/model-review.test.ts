@@ -21,11 +21,16 @@ test("hybrid review sends deterministic evidence and emits a grounded product fi
     const model: ReviewModel = {
       async review<T>(input: ModelReviewRequest) {
         request = input;
-        const sources = (input.input as {
-          sources: Array<{ id: string; path: string }>;
-        }).sources;
-        const readmeId = sources.find((source) => source.path === "README.md")?.id;
-        assert.ok(readmeId);
+        const citations = (input.input as {
+          citations: Array<{
+            citationId: string;
+            path: string;
+            startLine: number;
+            endLine: number;
+          }>;
+        }).citations;
+        const readme = citations.find((citation) => citation.path === "README.md");
+        assert.ok(readme);
         return {
           output: {
             schemaVersion: 1,
@@ -45,15 +50,14 @@ test("hybrid review sends deterministic evidence and emits a grounded product fi
               whyItMatters: "Unbounded authority produces overlap and noisy, contradictory reviews.",
               recommendation: "Document explicit owned and excluded concerns, then constrain the prompt to that boundary.",
               evidence: [{
-                evidenceId: readmeId,
-                line: 1,
+                citationId: readme.citationId,
+                line: readme.startLine,
                 detail: "The prepared documentation lacks an explicit authority boundary.",
-                quote: "# Example adversary",
               }],
             }],
             strengths: [{
               summary: "Deterministic observations use the structured SDK model.",
-              evidenceIds: ["source:1"],
+              citationIds: [readme.citationId],
             }],
           } as T,
           provider: "fixture",
@@ -78,10 +82,24 @@ test("hybrid review sends deterministic evidence and emits a grounded product fi
     assert.ok(request);
     const prepared = request.input as {
       deterministicSignals: unknown[];
-      sources: Array<{ id: string; path: string }>;
+      citations: Array<{
+        citationId: string;
+        path: string;
+        startLine: number;
+        endLine: number;
+        content: string;
+      }>;
     };
-    assert.ok(prepared.sources.length > 0);
-    assert.ok(prepared.sources.length <= 20);
+    assert.ok(prepared.citations.length > 0);
+    assert.equal(
+      new Set(prepared.citations.map((item) => item.citationId)).size,
+      prepared.citations.length,
+    );
+    assert.ok(prepared.citations.every((item) =>
+      item.content.length <= 4_000 &&
+      item.endLine >= item.startLine &&
+      item.endLine - item.startLine < 60
+    ));
     assert.ok(prepared.deterministicSignals.length > 0);
     const finding = result.findings.find((item) =>
       item.ruleId === "adversary.model.product-quality");
@@ -121,10 +139,9 @@ test("material deterministic findings remain visible when model observations are
               whyItMatters: "Reviewers should avoid duplicating deterministic manifest findings with weaker model commentary.",
               recommendation: "No change is needed for this model observation because deterministic validation already owns it.",
               evidence: [{
-                evidenceId: "adversary.yaml",
+                citationId: "src:1:1",
                 line: 1,
                 detail: "The manifest is already covered by deterministic validation.",
-                quote: "name: Example Bad",
               }],
             }],
             strengths: [],
@@ -192,7 +209,7 @@ test("malformed model output receives one bounded repair attempt", async () => {
   }
 });
 
-test("fabricated model evidence is omitted and falls back to deterministic review", async () => {
+test("an unknown prepared citation is omitted and falls back to deterministic review", async () => {
   const root = await mkdtemp(join(tmpdir(), "adversary-model-evidence-"));
   try {
     await cp(join(fixtures, "good"), root, { recursive: true });
@@ -219,10 +236,9 @@ test("fabricated model evidence is omitted and falls back to deterministic revie
               whyItMatters: "Unbounded authority would create overlapping, noisy, and contradictory reviews.",
               recommendation: "Constrain the documented authority to the adversary's supported domain.",
               evidence: [{
-                evidenceId: "README.md",
+                citationId: "invented:README.md",
                 line: 1,
-                detail: "This quote is not present in the included source.",
-                quote: "We review absolutely everything.",
+                detail: "This citation ID was not included in the prepared input.",
               }],
             }],
             strengths: [],
@@ -255,14 +271,23 @@ test("fabricated model evidence is omitted and falls back to deterministic revie
   }
 });
 
-test("whitespace-only quote differences remain deterministically groundable", async () => {
-  const root = await mkdtemp(join(tmpdir(), "adversary-model-evidence-whitespace-"));
+test("a prepared citation grounds evidence without copied source text", async () => {
+  const root = await mkdtemp(join(tmpdir(), "adversary-model-prepared-citation-"));
   try {
     await cp(join(fixtures, "good"), root, { recursive: true });
     let calls = 0;
     const model: ReviewModel = {
-      async review<T>() {
+      async review<T>(request: ModelReviewRequest) {
         calls += 1;
+        const citations = (request.input as {
+          citations: Array<{
+            citationId: string;
+            path: string;
+            startLine: number;
+          }>;
+        }).citations;
+        const readme = citations.find((citation) => citation.path === "README.md");
+        assert.ok(readme);
         return {
           output: {
             schemaVersion: 1,
@@ -282,10 +307,9 @@ test("whitespace-only quote differences remain deterministically groundable", as
               whyItMatters: "A clear authority boundary helps teams predict overlap and review cost.",
               recommendation: "Add a short owned-versus-excluded concerns section to the README.",
               evidence: [{
-                evidenceId: "README.md",
-                line: 1,
+                citationId: readme.citationId,
+                line: readme.startLine,
                 detail: "The README begins with only a general product heading.",
-                quote: "#  Example adversary",
               }],
             }],
             strengths: [],
@@ -311,7 +335,7 @@ test("whitespace-only quote differences remain deterministically groundable", as
   }
 });
 
-test("an ungrounded first citation can be repaired once", async () => {
+test("an invalid first citation can be repaired once", async () => {
   const root = await mkdtemp(join(tmpdir(), "adversary-model-evidence-repair-"));
   try {
     await cp(join(fixtures, "good"), root, { recursive: true });
@@ -319,7 +343,16 @@ test("an ungrounded first citation can be repaired once", async () => {
     const model: ReviewModel = {
       async review<T>(request: ModelReviewRequest) {
         calls += 1;
-        if (calls === 2) assert.match(request.prompt, /copy a short quote exactly/);
+        if (calls === 2) assert.match(request.prompt, /select a citationId included/);
+        const citations = (request.input as {
+          citations: Array<{
+            citationId: string;
+            path: string;
+            startLine: number;
+          }>;
+        }).citations;
+        const readme = citations.find((citation) => citation.path === "README.md");
+        assert.ok(readme);
         return {
           output: {
             schemaVersion: 1,
@@ -339,10 +372,9 @@ test("an ungrounded first citation can be repaired once", async () => {
               whyItMatters: "A clear authority boundary helps teams predict overlap and review cost.",
               recommendation: "Add a short owned-versus-excluded concerns section to the README.",
               evidence: [{
-                evidenceId: "README.md",
-                line: 1,
+                citationId: readme.citationId,
+                line: calls === 1 ? readme.startLine - 1 : readme.startLine,
                 detail: "The README begins with only a general product heading.",
-                quote: calls === 1 ? "Invented product heading" : "# Example adversary",
               }],
             }],
             strengths: [],

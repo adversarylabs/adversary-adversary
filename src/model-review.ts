@@ -17,6 +17,8 @@ const MAX_SOURCES = 20;
 const MAX_SOURCE_CHARACTERS = 10_000;
 const MAX_TOTAL_CHARACTERS = 140_000;
 const MAX_MODEL_OBSERVATIONS = 3;
+const MAX_CITATION_LINES = 60;
+const MAX_CITATION_CHARACTERS = 4_000;
 
 const MODEL_PROMPT = `You are adversary-adversary, the Staff-level reviewer for first-party Adversary Labs adversaries.
 
@@ -36,7 +38,7 @@ Method:
 - Use source excerpts to make engineering judgments deterministic rules cannot make.
 - Return zero to three important, high-confidence observations.
 - Synthesize related evidence into one concern with one remediation.
-- Cite only an included evidence ID or source path. Every observation citation must include a short quote copied exactly from that evidence; the quote, not the model's line estimate, anchors the final location.
+- Cite only a prepared citationId from deterministicSignals or citations. Select a line within that citation's inclusive startLine and endLine range. Never invent citation IDs or lines.
 - Do not invent runtime behavior, catalog policy, files, or user requirements.
 - Prefer silence over style feedback, speculative advice, or generic best practices.
 - Do not emit an observation when the recommendation is no action, no change, keep as-is, or optional ceremony.
@@ -51,17 +53,17 @@ Return JSON matching the supplied schema and nothing else.`;
 interface PreparedEvidence {
   id: string;
   path: string;
-  line: number;
+  startLine: number;
+  endLine: number;
   message: string;
   snippet: string;
-  source?: SourceFile;
+  content?: string;
 }
 
 interface ModelEvidence {
-  evidenceId: string;
+  citationId: string;
   line: number;
   detail: string;
-  quote: string;
 }
 
 interface ModelObservation {
@@ -90,7 +92,7 @@ interface AdversaryModelOutput {
     primaryConcern: string;
   };
   observations: ModelObservation[];
-  strengths: Array<{ summary: string; evidenceIds: string[] }>;
+  strengths: Array<{ summary: string; citationIds: string[] }>;
 }
 
 interface PreparedReview {
@@ -114,12 +116,13 @@ export function buildModelAdversaryReviewRequest(
     evidence.set(id, {
       id,
       path: detection.file,
-      line: detection.line,
+      startLine: detection.line,
+      endLine: detection.line,
       message: detection.label,
       snippet: detection.snippet,
     });
     return {
-      id,
+      citationId: id,
       ruleId: detection.ruleId,
       severity: severity(detection.ruleId),
       confidence: detection.confidence ?? "high",
@@ -129,27 +132,19 @@ export function buildModelAdversaryReviewRequest(
       data: detection.data ?? {},
     };
   });
-  const sources = selectSources(project, change).map((source, index) => {
-    const id = `source:${index + 1}`;
-    const content = source.content.slice(0, MAX_SOURCE_CHARACTERS);
-    const preparedSource: PreparedEvidence = {
-      id,
-      path: source.path,
-      line: 1,
-      message: `Prepared source excerpt for ${source.path}`,
-      snippet: content.split(/\r?\n/).slice(0, 3).join("\n").slice(0, 300),
-      source: { ...source, content },
-    };
-    evidence.set(id, preparedSource);
-    evidence.set(source.path, preparedSource);
-    return {
-      id,
-      path: source.path,
-      changed: change?.changedFiles.includes(source.path) ?? false,
-      truncated: content.length < source.content.length,
-      content,
-    };
-  });
+  const citations = selectSources(project, change).flatMap((source, sourceIndex) =>
+    citationChunks(source, sourceIndex).map((citation) => {
+      evidence.set(citation.id, citation);
+      return {
+        citationId: citation.id,
+        path: citation.path,
+        startLine: citation.startLine,
+        endLine: citation.endLine,
+        changed: change?.changedFiles.includes(citation.path) ?? false,
+        content: citation.content ?? "",
+      };
+    })
+  );
   return {
     evidence,
     request: {
@@ -172,14 +167,14 @@ export function buildModelAdversaryReviewRequest(
           fixturePaths: project.fixturePaths.slice(0, 100),
         },
         deterministicSignals,
-        sources,
+        citations,
         platformContract: {
           modelReviewOutput:
             "The broker validates successful ctx.model.review output against the supplied JSON schema.",
           observationSynthesis:
             "Repeated ctx.observe calls with the same groupKey and deduplicate=true become one finding with multiple evidence locations.",
           evidenceSnippets:
-            "Finding snippets are intentionally bounded previews; exact quote validation establishes evidence integrity.",
+            "Source text is split into bounded host-prepared citations. Citation ID and line-range validation establish evidence integrity without requiring the model to reproduce source text.",
         },
       },
       schema: modelSchema as Record<string, unknown>,
@@ -229,7 +224,7 @@ The previous response was malformed or used placeholder review prose. Produce a 
         prompt: `${prepared.request.prompt}
 
 REPAIR REQUIREMENT:
-The previous response cited text that was not present in the selected evidence. Produce a fresh judgment. For every observation, copy a short quote exactly from its cited source or deterministic signal. Do not paraphrase inside quote. If you cannot copy an exact quote, return zero observations; zero observations is a valid review.`,
+The previous response selected an unknown citationId or a line outside its prepared citation range. Produce a fresh judgment. For every observation, select a citationId included in deterministicSignals or citations and a line within its inclusive startLine and endLine. If you cannot select a valid prepared citation, return zero observations; zero observations is a valid review.`,
       }));
       assertSubstantiveObservations(output);
       repaired = true;
@@ -267,10 +262,10 @@ The previous response cited text that was not present in the selected evidence. 
     .slice(0, 3)
     .filter((strength) => isSubstantive(strength.summary, 15, 600));
   for (const [index, strength] of strengths.entries()) {
-    const evidence = strength.evidenceIds
+    const evidence = strength.citationIds
       .map((id) => prepared.evidence.get(id))
       .filter((item): item is PreparedEvidence => item !== undefined)
-      .map((item) => evidenceInput(item, item.line, item.message));
+      .map((item) => evidenceInput(item, item.startLine, item.message));
     if (evidence.length === 0) continue;
     ctx.review.positive({
       key: `adversary.model.strength.${index + 1}`,
@@ -356,70 +351,18 @@ function modelObservationEvidence(
 ): EvidenceInput[] {
   const evidence = observation.evidence
     .map((item) => {
-      const prepared = catalog.get(item.evidenceId);
+      const prepared = catalog.get(item.citationId);
       if (prepared === undefined) return undefined;
-      const quote = item.quote.trim();
-      if (quote === "") return undefined;
-      const line = prepared.source === undefined
-        ? groundedQuoteLine(prepared.snippet, quote, 1) === undefined
-          ? undefined
-          : prepared.line
-        : groundedQuoteLine(prepared.source.content, quote, item.line);
-      if (line === undefined) return undefined;
-      return evidenceInput(prepared, line, item.detail);
+      if (
+        !Number.isInteger(item.line) ||
+        item.line < prepared.startLine ||
+        item.line > prepared.endLine
+      ) return undefined;
+      return evidenceInput(prepared, item.line, item.detail);
     })
     .filter((item): item is EvidenceInput => item !== undefined)
     .slice(0, 8);
   return evidence;
-}
-
-function groundedQuoteLine(
-  content: string,
-  quote: string,
-  requestedLine: number,
-): number | undefined {
-  const exact = quoteLine(content, quote, requestedLine);
-  if (exact !== undefined) return exact;
-  const tokens = quote.trim().split(/\s+/).filter(Boolean);
-  if (tokens.length < 2 || quote.length > 1_000) return undefined;
-  const whitespaceTolerant = new RegExp(
-    tokens.map(escapeRegExp).join("\\s+"),
-    "gu",
-  );
-  return closestMatchLine(content, whitespaceTolerant, requestedLine);
-}
-
-function quoteLine(
-  content: string,
-  quote: string,
-  requestedLine: number,
-): number | undefined {
-  return closestMatchLine(
-    content,
-    new RegExp(escapeRegExp(quote), "gu"),
-    requestedLine,
-  );
-}
-
-function closestMatchLine(
-  content: string,
-  pattern: RegExp,
-  requestedLine: number,
-): number | undefined {
-  let best: { line: number; distance: number } | undefined;
-  for (const match of content.matchAll(pattern)) {
-    const offset = match.index;
-    const line = content.slice(0, offset).split("\n").length;
-    const distance = Number.isInteger(requestedLine)
-      ? Math.abs(line - requestedLine)
-      : Number.POSITIVE_INFINITY;
-    if (best === undefined || distance < best.distance) best = { line, distance };
-  }
-  return best?.line;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function isRepairableModelError(error: unknown): boolean {
@@ -520,16 +463,52 @@ function evidenceInput(
   line: number,
   message: string,
 ): EvidenceInput {
-  const lines = prepared.source?.content.split(/\r?\n/);
+  const lines = prepared.content?.split(/\r?\n/);
+  const localLine = line - prepared.startLine;
   const snippet = lines === undefined
     ? prepared.snippet
-    : lines.slice(Math.max(0, line - 2), line + 1).join("\n").slice(0, 500);
+    : lines.slice(Math.max(0, localLine - 1), localLine + 2).join("\n").slice(0, 500);
   return {
     location: { file: prepared.path, line },
     message,
     ...(snippet === "" ? {} : { snippet }),
-    data: { evidenceId: prepared.id },
+    data: { citationId: prepared.id },
   };
+}
+
+function citationChunks(source: SourceFile, sourceIndex: number): PreparedEvidence[] {
+  const content = source.content.slice(0, MAX_SOURCE_CHARACTERS);
+  const lines = content.split(/\r?\n/);
+  const chunks: PreparedEvidence[] = [];
+  let start = 0;
+  while (start < lines.length) {
+    let end = start;
+    let characters = 0;
+    while (end < lines.length && end - start < MAX_CITATION_LINES) {
+      const lineLength = lines[end].length + (end === start ? 0 : 1);
+      if (end > start && characters + lineLength > MAX_CITATION_CHARACTERS) break;
+      characters += lineLength;
+      end += 1;
+      if (characters >= MAX_CITATION_CHARACTERS) break;
+    }
+    if (end === start) end += 1;
+    const chunkContent = lines
+      .slice(start, end)
+      .join("\n")
+      .slice(0, MAX_CITATION_CHARACTERS);
+    const id = `src:${sourceIndex + 1}:${chunks.length + 1}`;
+    chunks.push({
+      id,
+      path: source.path,
+      startLine: start + 1,
+      endLine: end,
+      message: `Prepared source citation for ${source.path}`,
+      snippet: chunkContent.split(/\r?\n/).slice(0, 3).join("\n").slice(0, 300),
+      content: chunkContent,
+    });
+    start = end;
+  }
+  return chunks;
 }
 
 function selectSources(
