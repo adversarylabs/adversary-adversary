@@ -42,7 +42,10 @@ function grouping(project: AdversaryProject): Detection[] {
 
 function weakId(id: string): boolean {
   const parts = id.split(".");
-  return parts.length < 3 || /^(?:rule|check|test)\d*$/i.test(id) || /(?:^|[.-])(?:rule|check)[-_]?\d+$|(?:src|lib|index)[.-](?:line[-_.]?)?\d+/i.test(id);
+  return parts.length < 2 ||
+    parts.some((part) => part.trim() === "") ||
+    /^(?:rule|check|test)\d*$/i.test(id) ||
+    /(?:^|[.-])(?:rule|check)[-_]?\d+$|(?:src|lib|index)[.-](?:line[-_.]?)?\d+/i.test(id);
 }
 
 function forRule(project: AdversaryProject, use: RuleUse, ruleId: Detection["ruleId"], suffix: string, label: string, data: Record<string, unknown>): Detection {

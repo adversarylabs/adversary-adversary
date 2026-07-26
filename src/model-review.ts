@@ -42,6 +42,7 @@ Method:
 - Do not emit an observation when the recommendation is no action, no change, keep as-is, or optional ceremony.
 - If your explanation says there is no current defect or only a monitoring/process concern, omit the observation.
 - Narrow deterministic heuristics may intentionally favor precision; do not demand broader coverage without evidence that a missed shape belongs to the supported contract.
+- Stable rule IDs may use either <domain>.<concern> or deeper <domain>.<area>.<concern> forms. Do not demand extra namespace segments when the existing domain prefix is coherent and durable.
 - The SDK intentionally synthesizes repeated ctx.observe calls sharing groupKey with deduplicate=true into one multi-evidence finding.
 - primaryConcern must be an empty string when ship=true; otherwise it must be a short noun phrase suitable after "I would address", with no terminal punctuation.
 

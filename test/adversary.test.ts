@@ -103,6 +103,15 @@ test("weak rule IDs and generic recommendations are detected", async () => {
   await finding("generic-recommendation", "adversary.typescript.recommendation.weak");
 });
 
+test("stable domain-concern rule IDs do not require an extra namespace segment", async () => {
+  const output = await review("two-part-rule-id");
+  assert.equal(
+    output.findings.some((item) =>
+      item.ruleId === "adversary.typescript.rule.id-quality"),
+    false,
+  );
+});
+
 test("repeated observations without a grouping boundary are detected", async () => {
   await finding("weak-grouping", "adversary.typescript.rule.grouping");
 });
