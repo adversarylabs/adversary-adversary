@@ -52,7 +52,12 @@ function permissions(project: AdversaryProject): Detection[] {
 
 function permission(project: AdversaryProject, subject: string, label: string, data: Record<string, unknown>): Detection {
   const source = project.manifest.source?.content ?? "";
-  const line = lineOf(source, subject);
+  const field = {
+    network: "permissions.network",
+    write: "permissions.filesystem.write",
+    environment: "permissions.environment.allow",
+  }[subject];
+  const line = field === undefined ? 1 : project.manifest.locations[field] ?? 1;
   return detection("adversary.typescript.permissions.broad", subject, "permissions", "adversary.yaml", line, snippetAt(source, line), label, data);
 }
 

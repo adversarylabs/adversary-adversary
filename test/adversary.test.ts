@@ -74,11 +74,17 @@ test("canonical manifest violations group with precise evidence", async () => {
   assert.equal(result.severity, "high");
   assert.ok(result.evidence.length >= 4);
   assert.equal(result.evidence.every((item) => item.location?.file === "adversary.yaml" && (item.location?.line ?? 0) > 0), true);
+  const runtimeName = result.evidence.find((item) => item.data?.field === "runtime.name");
+  assert.equal(runtimeName?.location?.line, 5);
 });
 
 test("manifest and package identity disagreements group", async () => {
   const result = await finding("identity-mismatch", "adversary.typescript.identity.mismatch");
   assert.equal(result.evidence.length, 2);
+  assert.deepEqual(
+    result.evidence.map((item) => item.location?.line),
+    [6, 7],
+  );
 });
 
 test("legacy SDK entry points are detected", async () => {
@@ -150,6 +156,10 @@ test("unsafe package contents and runtime dependency gaps are detected", async (
 test("unused broad permissions are detected", async () => {
   const result = await finding("broad-permissions", "adversary.typescript.permissions.broad");
   assert.equal(result.evidence.length, 3);
+  assert.deepEqual(
+    result.evidence.map((item) => item.location?.line),
+    [8, 9, 11],
+  );
 });
 
 test("incomplete publish metadata is detected", async () => {
