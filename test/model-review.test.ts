@@ -192,7 +192,7 @@ test("malformed model output receives one bounded repair attempt", async () => {
   }
 });
 
-test("fabricated model evidence is rejected instead of presented", async () => {
+test("fabricated model evidence is omitted and falls back to deterministic review", async () => {
   const root = await mkdtemp(join(tmpdir(), "adversary-model-evidence-"));
   try {
     await cp(join(fixtures, "good"), root, { recursive: true });
@@ -233,12 +233,79 @@ test("fabricated model evidence is rejected instead of presented", async () => {
       },
     };
 
-    await assert.rejects(
-      createApp().run({ input: { source: { path: root } }, model }),
-      (error: unknown) =>
-        error instanceof ModelReviewError && error.code === "invalid_model_evidence",
-    );
+    const result = await createApp().run({
+      input: { source: { path: root } },
+      model,
+    });
+
     assert.equal(calls, 2);
+    assert.equal(
+      result.findings.some((item) => item.ruleId === "adversary.model.product-quality"),
+      false,
+    );
+    assert.equal(
+      result.observations.some((item) =>
+        item.key === "adversary.model.evidence-unavailable"),
+      true,
+    );
+    assert.equal(result.assessment?.risk, "none");
+    assert.equal(result.opinion?.ship, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("whitespace-only quote differences remain deterministically groundable", async () => {
+  const root = await mkdtemp(join(tmpdir(), "adversary-model-evidence-whitespace-"));
+  try {
+    await cp(join(fixtures, "good"), root, { recursive: true });
+    let calls = 0;
+    const model: ReviewModel = {
+      async review<T>() {
+        calls += 1;
+        return {
+          output: {
+            schemaVersion: 1,
+            assessment: {
+              risk: "low",
+              ship: true,
+              summary: "The adversary is coherent, with one small documentation improvement available.",
+              primaryConcern: "",
+            },
+            observations: [{
+              id: "authority-detail",
+              title: "Authority boundary could be more explicit",
+              category: "product-quality",
+              severity: "low",
+              confidence: "high",
+              summary: "The README explains usage but gives little detail about specialist boundaries.",
+              whyItMatters: "A clear authority boundary helps teams predict overlap and review cost.",
+              recommendation: "Add a short owned-versus-excluded concerns section to the README.",
+              evidence: [{
+                evidenceId: "README.md",
+                line: 1,
+                detail: "The README begins with only a general product heading.",
+                quote: "#  Example adversary",
+              }],
+            }],
+            strengths: [],
+          } as T,
+          provider: "fixture",
+          model: "fixture",
+        };
+      },
+    };
+
+    const result = await createApp().run({
+      input: { source: { path: root } },
+      model,
+    });
+
+    assert.equal(calls, 1);
+    assert.equal(
+      result.findings.some((item) => item.ruleId === "adversary.model.product-quality"),
+      true,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

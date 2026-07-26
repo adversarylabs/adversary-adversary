@@ -228,7 +228,7 @@ The previous response was malformed or used placeholder review prose. Produce a 
         prompt: `${prepared.request.prompt}
 
 REPAIR REQUIREMENT:
-The previous response cited text that was not present in the selected evidence. Produce a fresh judgment. For every observation, copy a short quote exactly from its cited source or deterministic signal. Do not paraphrase inside quote.`,
+The previous response cited text that was not present in the selected evidence. Produce a fresh judgment. For every observation, copy a short quote exactly from its cited source or deterministic signal. Do not paraphrase inside quote. If you cannot copy an exact quote, return zero observations; zero observations is a valid review.`,
       }));
       assertSubstantiveObservations(output);
       repaired = true;
@@ -238,7 +238,13 @@ The previous response cited text that was not present in the selected evidence. 
       throw repairError;
     }
   }
-  if (modelObservations.invalidEvidence) throw invalidModelEvidenceError();
+  if (modelObservations.invalidEvidence) {
+    ctx.review.observe({
+      key: "adversary.model.evidence-unavailable",
+      summary: "Model-backed product judgment was omitted because its citations could not be verified after one repair attempt.",
+    });
+    return "unavailable";
+  }
   for (const item of modelObservations.prepared) emitModelObservation(ctx, item);
 
   const bounded = modelObservations.bounded;
@@ -354,8 +360,10 @@ function modelObservationEvidence(
       const quote = item.quote.trim();
       if (quote === "") return undefined;
       const line = prepared.source === undefined
-        ? prepared.snippet.includes(quote) ? prepared.line : undefined
-        : exactQuoteLine(prepared.source.content, quote, item.line);
+        ? groundedQuoteLine(prepared.snippet, quote, 1) === undefined
+          ? undefined
+          : prepared.line
+        : groundedQuoteLine(prepared.source.content, quote, item.line);
       if (line === undefined) return undefined;
       return evidenceInput(prepared, line, item.detail);
     })
@@ -364,29 +372,53 @@ function modelObservationEvidence(
   return evidence;
 }
 
-function invalidModelEvidenceError(): ModelReviewError {
-  return new ModelReviewError(
-    "Adversary model review cited evidence that was not present in the cited source.",
-    { code: "invalid_model_evidence", retryable: false },
-  );
-}
-
-function exactQuoteLine(
+function groundedQuoteLine(
   content: string,
   quote: string,
   requestedLine: number,
 ): number | undefined {
-  let offset = content.indexOf(quote);
+  const exact = quoteLine(content, quote, requestedLine);
+  if (exact !== undefined) return exact;
+  const tokens = quote.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length < 2 || quote.length > 1_000) return undefined;
+  const whitespaceTolerant = new RegExp(
+    tokens.map(escapeRegExp).join("\\s+"),
+    "gu",
+  );
+  return closestMatchLine(content, whitespaceTolerant, requestedLine);
+}
+
+function quoteLine(
+  content: string,
+  quote: string,
+  requestedLine: number,
+): number | undefined {
+  return closestMatchLine(
+    content,
+    new RegExp(escapeRegExp(quote), "gu"),
+    requestedLine,
+  );
+}
+
+function closestMatchLine(
+  content: string,
+  pattern: RegExp,
+  requestedLine: number,
+): number | undefined {
   let best: { line: number; distance: number } | undefined;
-  while (offset !== -1) {
+  for (const match of content.matchAll(pattern)) {
+    const offset = match.index;
     const line = content.slice(0, offset).split("\n").length;
     const distance = Number.isInteger(requestedLine)
       ? Math.abs(line - requestedLine)
       : Number.POSITIVE_INFINITY;
     if (best === undefined || distance < best.distance) best = { line, distance };
-    offset = content.indexOf(quote, offset + quote.length);
   }
   return best?.line;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function isRepairableModelError(error: unknown): boolean {
