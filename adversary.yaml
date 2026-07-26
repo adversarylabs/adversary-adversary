@@ -1,5 +1,5 @@
 name: adversary
-version: 0.0.14
+version: 0.0.15
 description: Reviews TypeScript adversaries for SDK usage, rule design, finding quality, tests, packaging, and publish readiness.
 
 triggers:
