@@ -1,0 +1,122 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "enum": [1]
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "risk": {
+          "type": "string",
+          "enum": ["none", "low", "medium", "high", "critical"]
+        },
+        "ship": {
+          "type": "boolean"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "primaryConcern": {
+          "type": "string"
+        }
+      },
+      "required": ["risk", "ship", "summary", "primaryConcern"]
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "manifest-quality",
+              "prompt-quality",
+              "review-quality",
+              "sdk-usage",
+              "product-quality"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["medium", "high"]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "whyItMatters": {
+            "type": "string"
+          },
+          "recommendation": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "evidenceId": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": ["evidenceId", "line", "detail"]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "category",
+          "severity",
+          "confidence",
+          "summary",
+          "whyItMatters",
+          "recommendation",
+          "evidence"
+        ]
+      }
+    },
+    "strengths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["summary", "evidenceIds"]
+      }
+    }
+  },
+  "required": ["schemaVersion", "assessment", "observations", "strengths"]
+}

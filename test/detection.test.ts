@@ -18,5 +18,5 @@ test("declares deterministic automatic detection", async () => {
     "tests/**/*.ts"
   ]);
   assert.equal(manifest.detection?.entrypoint, undefined);
+  assert.equal(manifest.permissions?.model, true);
 });
-

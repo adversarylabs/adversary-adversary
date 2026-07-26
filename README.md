@@ -8,7 +8,7 @@ It does not review application code or any broader Adversary Labs service, regis
 
 A repository is reviewed only when it contains `adversary.yaml`, `package.json`, `tsconfig.json`, TypeScript under `src/`, and a dependency on or import from the Adversary TypeScript SDK. Unrelated TypeScript projects receive no findings.
 
-Version 0.1.0 performs deterministic static review of:
+The reviewer combines deterministic static review with model-backed product judgment. Deterministic analysis covers:
 
 - canonical `adversary.manifest.v1` validity and cross-file identity;
 - current structured SDK usage and SDK-owned presentation mechanics;
@@ -16,6 +16,8 @@ Version 0.1.0 performs deterministic static review of:
 - clean fixtures, firing coverage, negative coverage, and grouping regressions;
 - build entrypoints, runtime imports, package intent, and least-privilege permissions;
 - README, license, provenance, runtime, and usage metadata.
+
+The model review consumes those observations plus bounded source excerpts. It owns the questions that require engineering judgment: whether authority is coherent, prompts resist hallucination, findings are synthesized and prioritized, SDK capabilities are used effectively, and the adversary would provide enough value to justify enabling it. It returns no more than three evidence-linked observations.
 
 The canonical manifest JSON schema is shipped in [`schema/adversary.manifest.v1.schema.json`](schema/adversary.manifest.v1.schema.json). Project-level checks add entrypoint existence and package/TypeScript consistency without redefining the manifest contract.
 
@@ -65,7 +67,9 @@ Build and review a local TypeScript adversary:
 
 ```bash
 npm run build
-adversary run . --repo ../dockerfile-adversary
+adversary run . --path ../dockerfile-adversary \
+  --model-provider fireworks \
+  --model accounts/fireworks/models/your-model-id
 ```
 
 After publication:
@@ -76,9 +80,11 @@ adversary run adversarylabs/adversary --repo .
 
 The adversary emits structured observations only. The SDK owns synthesis, grouping, ranking, suppression, and terminal or JSON rendering.
 
-## Deliberate v0.1.0 limits
+Provider API tokens remain CLI configuration; they are not read by this adversary.
 
-The implementation uses conservative source-pattern analysis rather than a full TypeScript semantic program. It only reports clear legacy APIs, direct presentation, dependency, evidence, confidence, and grouping patterns. It does not attempt prose scoring, numerical code coverage, arbitrary build execution, or proof of complete least privilege.
+## Deliberate bootstrap limits
+
+The deterministic implementation uses conservative source-pattern analysis rather than a full TypeScript semantic program. It only reports clear legacy APIs, direct presentation, dependency, evidence, confidence, and grouping patterns. The model reviews prepared evidence; it is explicitly constrained from inventing missing runtime behavior or catalog policy. The adversary does not execute target builds, score prose numerically, or claim proof of complete least privilege.
 
 These boundaries keep the first release useful for dogfooding while avoiding generic TypeScript-linter behavior.
 

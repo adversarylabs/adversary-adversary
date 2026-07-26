@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 
 import { Adversary } from "@adversarylabs/sdk";
-import { analyzeProject } from "./analyze.js";
+import { analyzeProject, applyDeterministicAssessment } from "./analyze.js";
 import { discoverProject } from "./discover.js";
+import { runModelAdversaryReview } from "./model-review.js";
 import { registerRules } from "./rules/definitions.js";
 
 export function createApp(): Adversary {
-  const app = new Adversary({ name: "adversary", version: "0.1.0", review: { maximumFindings: 8 } });
+  const app = new Adversary({ name: "adversary", review: { maximumFindings: 8 } });
   registerRules(app);
   app.rule("adversary.typescript.review", async (ctx) => {
     const project = await discoverProject(ctx.repoPath);
     ctx.summary.files_scanned = project.files.length;
-    analyzeProject(ctx, project);
+    const detections = analyzeProject(ctx, project);
+    if (detections === null) return;
+    const modelStatus = await runModelAdversaryReview(ctx, project, detections);
+    if (modelStatus === "unavailable") applyDeterministicAssessment(ctx, detections);
   });
   return app;
 }
