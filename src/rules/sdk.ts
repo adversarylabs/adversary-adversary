@@ -46,8 +46,13 @@ function reimplementation(file: SourceFile): Detection[] {
 function observationEvidence(file: SourceFile): Detection[] {
   const result: Detection[] = [];
   for (const call of objectCalls(file.content, /ctx\.observe\s*\(/g)) {
-    if (!/\blocation\s*:/.test(call.text) || !/\bevidence\s*:/.test(call.text)) {
-      result.push(at(file, "adversary.typescript.observation.evidence", `observation-${call.line}`, "evidence", call.index, "observation does not include both location and evidence", { locationPresent: /\blocation\s*:/.test(call.text), evidencePresent: /\bevidence\s*:/.test(call.text) }));
+    const locationPresent = /\blocation\s*:/.test(call.text);
+    const evidencePresent = /\bevidence\s*:/.test(call.text);
+    const locationCarriesEvidence =
+      /\blocation\s*:\s*[A-Za-z_$][\w$]*(?:\s*[,(]|\s*[,}])/.test(call.text) ||
+      /\blocation\s*:\s*\{[\s\S]*?\b(?:label|message|snippet|data)\s*:/.test(call.text);
+    if (!locationPresent || (!evidencePresent && !locationCarriesEvidence)) {
+      result.push(at(file, "adversary.typescript.observation.evidence", `observation-${call.line}`, "evidence", call.index, "observation does not include a useful evidence location", { locationPresent, evidencePresent, locationCarriesEvidence }));
     } else if (/evidence\s*:\s*\{\s*(?:metadata|data)\s*:/.test(call.text) && !/(?:label|snippet|message)\s*:/.test(call.text)) {
       result.push(at(file, "adversary.typescript.observation.evidence", `observation-${call.line}`, "evidence", call.index, "observation evidence is only opaque structured data", { opaqueOnly: true }));
     }

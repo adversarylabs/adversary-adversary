@@ -3,42 +3,52 @@
   "additionalProperties": false,
   "properties": {
     "schemaVersion": {
+      "description": "Protocol version; always 1.",
       "type": "integer",
       "enum": [1]
     },
     "assessment": {
+      "description": "Substantive overall adversary product judgment.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "risk": {
+          "description": "Highest current risk supported by an observation.",
           "type": "string",
           "enum": ["none", "low", "medium", "high", "critical"]
         },
         "ship": {
+          "description": "Whether engineers should enable this adversary as-is.",
           "type": "boolean"
         },
         "summary": {
+          "description": "Concrete overall assessment grounded in prepared evidence; never a placeholder.",
           "type": "string"
         },
         "primaryConcern": {
+          "description": "Empty when ship is true; otherwise a short noun phrase naming the primary concern.",
           "type": "string"
         }
       },
       "required": ["risk", "ship", "summary", "primaryConcern"]
     },
     "observations": {
+      "description": "Zero to three important, actionable adversary-quality observations.",
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "id": {
+            "description": "Stable short identifier within this response.",
             "type": "string"
           },
           "title": {
+            "description": "Concise product-quality concern.",
             "type": "string"
           },
           "category": {
+            "description": "Owned adversary review category.",
             "type": "string",
             "enum": [
               "manifest-quality",
@@ -49,39 +59,52 @@
             ]
           },
           "severity": {
+            "description": "Current impact if the concern remains.",
             "type": "string",
             "enum": ["low", "medium", "high", "critical"]
           },
           "confidence": {
+            "description": "How directly the evidence supports the conclusion.",
             "type": "string",
             "enum": ["medium", "high"]
           },
           "summary": {
+            "description": "What the adversary does and why it is problematic.",
             "type": "string"
           },
           "whyItMatters": {
+            "description": "Concrete trust, noise, correctness, or product consequence.",
             "type": "string"
           },
           "recommendation": {
+            "description": "Specific actionable improvement; never 'no action needed'.",
             "type": "string"
           },
           "evidence": {
+            "description": "Direct citations that prove the observation.",
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "properties": {
                 "evidenceId": {
+                  "description": "Exact evidence ID or included source path.",
                   "type": "string"
                 },
                 "line": {
+                  "description": "Best 1-based line estimate; the exact quote anchors the final location.",
                   "type": "integer"
                 },
                 "detail": {
+                  "description": "How this citation supports the observation.",
+                  "type": "string"
+                },
+                "quote": {
+                  "description": "Short exact text copied from the cited source or deterministic signal.",
                   "type": "string"
                 }
               },
-              "required": ["evidenceId", "line", "detail"]
+              "required": ["evidenceId", "line", "detail", "quote"]
             }
           }
         },
@@ -99,15 +122,18 @@
       }
     },
     "strengths": {
+      "description": "Zero to three meaningful strengths.",
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "summary": {
+            "description": "Concrete strength demonstrated by prepared evidence.",
             "type": "string"
           },
           "evidenceIds": {
+            "description": "Supporting evidence IDs or source paths.",
             "type": "array",
             "items": {
               "type": "string"

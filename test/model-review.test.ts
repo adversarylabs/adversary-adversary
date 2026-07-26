@@ -3,7 +3,11 @@ import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { ModelReviewRequest, ReviewModel } from "@adversarylabs/sdk";
+import {
+  ModelReviewError,
+  type ModelReviewRequest,
+  type ReviewModel,
+} from "@adversarylabs/sdk";
 import { createApp } from "../src/index.ts";
 
 const fixtures = new URL("./fixtures/", import.meta.url).pathname;
@@ -44,6 +48,7 @@ test("hybrid review sends deterministic evidence and emits a grounded product fi
                 evidenceId: readmeId,
                 line: 1,
                 detail: "The prepared documentation lacks an explicit authority boundary.",
+                quote: "# Example adversary",
               }],
             }],
             strengths: [{
@@ -121,6 +126,100 @@ test("material deterministic findings veto a model ship decision", async () => {
     });
     assert.equal(result.assessment?.risk, "high");
     assert.equal(result.opinion?.ship, false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("malformed model output receives one bounded repair attempt", async () => {
+  const root = await mkdtemp(join(tmpdir(), "adversary-model-repair-"));
+  try {
+    await cp(join(fixtures, "good"), root, { recursive: true });
+    let calls = 0;
+    const model: ReviewModel = {
+      async review<T>(request: ModelReviewRequest) {
+        calls += 1;
+        if (calls === 1) {
+          throw new ModelReviewError("model output does not match requested schema", {
+            code: "invalid_model_output",
+            retryable: false,
+          });
+        }
+        assert.match(request.prompt, /REPAIR REQUIREMENT/);
+        return {
+          output: {
+            schemaVersion: 1,
+            assessment: {
+              risk: "none",
+              ship: true,
+              summary: "The adversary is coherent, narrowly scoped, and supported by prepared evidence.",
+              primaryConcern: "",
+            },
+            observations: [],
+            strengths: [],
+          } as T,
+          provider: "fixture",
+          model: "fixture",
+        };
+      },
+    };
+
+    const result = await createApp().run({
+      input: { source: { path: root } },
+      model,
+    });
+
+    assert.equal(calls, 2);
+    assert.equal(result.opinion?.ship, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("fabricated model evidence is rejected instead of presented", async () => {
+  const root = await mkdtemp(join(tmpdir(), "adversary-model-evidence-"));
+  try {
+    await cp(join(fixtures, "good"), root, { recursive: true });
+    const model: ReviewModel = {
+      async review<T>() {
+        return {
+          output: {
+            schemaVersion: 1,
+            assessment: {
+              risk: "medium",
+              ship: false,
+              summary: "The adversary allegedly lacks an explicit and coherent authority boundary.",
+              primaryConcern: "the missing authority boundary",
+            },
+            observations: [{
+              id: "invented-authority",
+              title: "Missing authority boundary",
+              category: "product-quality",
+              severity: "medium",
+              confidence: "high",
+              summary: "The documentation allegedly claims responsibility for every engineering concern.",
+              whyItMatters: "Unbounded authority would create overlapping, noisy, and contradictory reviews.",
+              recommendation: "Constrain the documented authority to the adversary's supported domain.",
+              evidence: [{
+                evidenceId: "README.md",
+                line: 1,
+                detail: "This quote is not present in the included source.",
+                quote: "We review absolutely everything.",
+              }],
+            }],
+            strengths: [],
+          } as T,
+          provider: "fixture",
+          model: "fixture",
+        };
+      },
+    };
+
+    await assert.rejects(
+      createApp().run({ input: { source: { path: root } }, model }),
+      (error: unknown) =>
+        error instanceof ModelReviewError && error.code === "invalid_model_evidence",
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
