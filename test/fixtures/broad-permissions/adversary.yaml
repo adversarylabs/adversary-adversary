@@ -1,10 +1,12 @@
 name: example
 version: 1.0.0
-description: Reviews repositories for a focused example concern.
+description: Reviews network, write, and environment configuration.
 runtime: { name: node, version: "22", command: [dist/index.js] }
 permissions:
-  filesystem: { read: ["."], write: [generated] }
+  filesystem:
+    read: ["."]
+    write: [generated]
   network: true
-  environment: { allow: [DEPLOY_TOKEN] }
+  environment:
+    allow: [DEPLOY_TOKEN]
 findings: { format: adversary.review.v1 }
-

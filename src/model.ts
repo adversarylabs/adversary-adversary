@@ -22,6 +22,7 @@ export interface ManifestModel {
   raw?: JsonMap;
   source?: SourceFile;
   errors: ManifestError[];
+  locations: Record<string, number>;
   name?: string;
   version?: string;
   description?: string;
@@ -111,7 +112,60 @@ export function lineOf(source: string, needle: string): number {
   return index < 0 ? 1 : index + 1;
 }
 
+export function topLevelJsonPropertyLine(source: string, property: string): number {
+  let objectDepth = 0;
+  let line = 1;
+  for (let index = 0; index < source.length;) {
+    const character = source[index];
+    if (character === "\n") {
+      line += 1;
+      index += 1;
+      continue;
+    }
+    if (character === "{") {
+      objectDepth += 1;
+      index += 1;
+      continue;
+    }
+    if (character === "}") {
+      objectDepth -= 1;
+      index += 1;
+      continue;
+    }
+    if (character !== "\"") {
+      index += 1;
+      continue;
+    }
+
+    const tokenLine = line;
+    const tokenStart = index;
+    index += 1;
+    let escaped = false;
+    while (index < source.length) {
+      const tokenCharacter = source[index];
+      if (tokenCharacter === "\n") line += 1;
+      if (!escaped && tokenCharacter === "\"") {
+        index += 1;
+        break;
+      }
+      escaped = !escaped && tokenCharacter === "\\";
+      if (tokenCharacter !== "\\") escaped = false;
+      index += 1;
+    }
+    if (objectDepth !== 1) continue;
+
+    let cursor = index;
+    while (cursor < source.length && /\s/.test(source[cursor] ?? "")) cursor += 1;
+    if (source[cursor] !== ":") continue;
+    try {
+      if (JSON.parse(source.slice(tokenStart, index)) === property) return tokenLine;
+    } catch {
+      return 1;
+    }
+  }
+  return 1;
+}
+
 export function snippetAt(source: string, line: number): string {
   return source.split(/\r?\n/)[line - 1]?.trim().slice(0, 240) ?? "";
 }
-
