@@ -209,6 +209,86 @@ test("malformed model output receives one bounded repair attempt", async () => {
   }
 });
 
+test("a model timeout falls back immediately to the deterministic review", async () => {
+  const root = await mkdtemp(join(tmpdir(), "adversary-model-timeout-"));
+  try {
+    await cp(join(fixtures, "good"), root, { recursive: true });
+    await cp(join(fixtures, "invalid-manifest"), root, { recursive: true, force: true });
+    let calls = 0;
+    const model: ReviewModel = {
+      async review() {
+        calls += 1;
+        throw new ModelReviewError("Model review exceeded its 120000ms timeout.", {
+          code: "model_timeout",
+          retryable: true,
+        });
+      },
+    };
+
+    const result = await createApp().run({
+      input: { source: { path: root } },
+      model,
+    });
+
+    assert.equal(calls, 1);
+    assert.equal(result.assessment?.risk, "high");
+    assert.equal(
+      result.findings.some((item) =>
+        item.ruleId === "adversary.typescript.manifest.invalid"),
+      true,
+    );
+    assert.equal(result.opinion?.ship, false);
+    assert.equal(
+      result.observations.some((item) =>
+        item.key === "adversary.model.transient-unavailable" &&
+        /timed out/.test(item.summary)),
+      true,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("a timeout during model-output repair falls back without a third call", async () => {
+  const root = await mkdtemp(join(tmpdir(), "adversary-model-repair-timeout-"));
+  try {
+    await cp(join(fixtures, "good"), root, { recursive: true });
+    let calls = 0;
+    const model: ReviewModel = {
+      async review() {
+        calls += 1;
+        if (calls === 1) {
+          throw new ModelReviewError("model output does not match requested schema", {
+            code: "invalid_model_output",
+            retryable: false,
+          });
+        }
+        throw new ModelReviewError("Model review exceeded its 120000ms timeout.", {
+          code: "model_timeout",
+          retryable: true,
+        });
+      },
+    };
+
+    const result = await createApp().run({
+      input: { source: { path: root } },
+      model,
+    });
+
+    assert.equal(calls, 2);
+    assert.equal(result.assessment?.risk, "none");
+    assert.equal(result.opinion?.ship, true);
+    assert.equal(
+      result.observations.some((item) =>
+        item.key === "adversary.model.transient-unavailable" &&
+        /timed out/.test(item.summary)),
+      true,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("an unknown prepared citation is omitted and falls back to deterministic review", async () => {
   const root = await mkdtemp(join(tmpdir(), "adversary-model-evidence-"));
   try {

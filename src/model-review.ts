@@ -198,7 +198,7 @@ export async function runModelAdversaryReview(
     ({ output } = await ctx.model.review<AdversaryModelOutput>(prepared.request));
     assertSubstantiveObservations(output);
   } catch (error) {
-    if (error instanceof ModelUnavailableError) return "unavailable";
+    if (handleTransientModelFailure(ctx, error)) return "unavailable";
     if (!isRepairableModelError(error)) throw error;
     try {
       ({ output } = await ctx.model.review<AdversaryModelOutput>({
@@ -211,7 +211,7 @@ The previous response was malformed or used placeholder review prose. Produce a 
       assertSubstantiveObservations(output);
       repaired = true;
     } catch (repairError) {
-      if (repairError instanceof ModelUnavailableError) return "unavailable";
+      if (handleTransientModelFailure(ctx, repairError)) return "unavailable";
       throw repairError;
     }
   }
@@ -230,7 +230,7 @@ The previous response selected an unknown citationId or a line outside its prepa
       repaired = true;
       modelObservations = prepareModelObservations(output, prepared.evidence);
     } catch (repairError) {
-      if (repairError instanceof ModelUnavailableError) return "unavailable";
+      if (handleTransientModelFailure(ctx, repairError)) return "unavailable";
       throw repairError;
     }
   }
@@ -368,6 +368,22 @@ function modelObservationEvidence(
 function isRepairableModelError(error: unknown): boolean {
   return error instanceof ModelReviewError &&
     (error.code === "invalid_model_output" || error.code === "invalid_model_judgment");
+}
+
+function handleTransientModelFailure(ctx: RuleContext, error: unknown): boolean {
+  if (error instanceof ModelUnavailableError) return true;
+  if (
+    !(error instanceof ModelReviewError) ||
+    !error.retryable ||
+    isRepairableModelError(error)
+  ) return false;
+  ctx.review.observe({
+    key: "adversary.model.transient-unavailable",
+    summary: error.code === "model_timeout"
+      ? "Model-backed product judgment timed out; the deterministic review completed without it."
+      : "Model-backed product judgment was temporarily unavailable; the deterministic review completed without it.",
+  });
+  return true;
 }
 
 function isCurrentActionableConcern(observation: ModelObservation): boolean {
