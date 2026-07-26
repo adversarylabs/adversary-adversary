@@ -105,6 +105,15 @@ test("observations without location and evidence are detected", async () => {
   await finding("poor-evidence", "adversary.typescript.observation.evidence");
 });
 
+test("an EvidenceInput location does not require a duplicate evidence field", async () => {
+  const output = await review("evidence-input-location");
+  assert.equal(
+    output.findings.some((item) =>
+      item.ruleId === "adversary.typescript.observation.evidence"),
+    false,
+  );
+});
+
 test("obviously heuristic high confidence is detected", async () => {
   await finding("confidence-mismatch", "adversary.typescript.confidence.calibration");
 });
