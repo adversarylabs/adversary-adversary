@@ -19,6 +19,8 @@ The reviewer combines deterministic static review with model-backed product judg
 
 The model review consumes those observations plus bounded source excerpts. It owns the questions that require engineering judgment: whether authority is coherent, prompts resist hallucination, findings are synthesized and prioritized, SDK capabilities are used effectively, and the adversary would provide enough value to justify enabling it. It returns no more than three evidence-linked observations.
 
+Every model citation is grounded against prepared text, allowing only whitespace-equivalent formatting. An ungrounded response gets one repair attempt; if its citations still cannot be verified, model observations are omitted and the deterministic review completes with a visible note instead of failing the run.
+
 The canonical manifest JSON schema is shipped in [`schema/adversary.manifest.v1.schema.json`](schema/adversary.manifest.v1.schema.json). Project-level checks add entrypoint existence and package/TypeScript consistency without redefining the manifest contract.
 
 The reviewer never executes the target project’s build, tests, or source. A missing or stale build is reported from declared package intent and file evidence; final compilation remains the author’s explicit pre-publish step.
