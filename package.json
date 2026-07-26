@@ -1,6 +1,6 @@
 {
   "name": "adversary",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Reviews TypeScript adversaries for SDK usage, rule design, finding quality, tests, packaging, and publish readiness.",
   "type": "module",
   "private": true,
