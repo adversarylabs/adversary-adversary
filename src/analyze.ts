@@ -34,7 +34,11 @@ function positives(ctx: RuleContext, project: AdversaryProject, detections: Dete
   if (lacks("adversary.typescript.sdk.legacy-api") && lacks("adversary.typescript.presentation.manual") && /ctx\.(?:observe|finding|review\.)/.test(project.sourceFiles.map((file) => file.content).join("\n"))) ctx.review.positive({
     key: "adversary.typescript.sdk.structured", summary: "Uses the current structured SDK review model without direct presentation logic.",
   });
-  if (lacks("adversary.typescript.tests.missing-clean-fixture") && lacks("adversary.typescript.tests.rule-coverage")) ctx.review.positive({
+  if (
+    lacks("adversary.typescript.tests.missing-clean-fixture") &&
+    lacks("adversary.typescript.tests.missing-vulnerable-fixture") &&
+    lacks("adversary.typescript.tests.rule-coverage")
+  ) ctx.review.positive({
     key: "adversary.typescript.tests.behavioral", summary: "Includes clean and firing behavioral coverage for the declared rules.",
   });
   if (project.tsconfig && typeof project.tsconfig.compilerOptions === "object" && project.tsconfig.compilerOptions !== null && (project.tsconfig.compilerOptions as Record<string, unknown>).strict === true) ctx.review.positive({

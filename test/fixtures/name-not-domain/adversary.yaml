@@ -1,4 +1,4 @@
-name: meta/example
+name: example
 version: 1.0.0
 description: Reviews repositories for a focused example concern.
 runtime:
@@ -14,4 +14,3 @@ permissions:
     allow: []
 findings:
   format: adversary.review.v1
-

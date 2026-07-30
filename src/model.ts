@@ -91,13 +91,17 @@ export type RuleId =
   | "adversary.typescript.recommendation.weak"
   | "adversary.typescript.sdk.reimplementation"
   | "adversary.typescript.tests.missing-clean-fixture"
+  | "adversary.typescript.tests.missing-vulnerable-fixture"
   | "adversary.typescript.tests.rule-coverage"
   | "adversary.typescript.tests.grouping"
   | "adversary.typescript.build.output"
   | "adversary.typescript.package.contents"
   | "adversary.typescript.package.dependencies"
   | "adversary.typescript.permissions.broad"
-  | "adversary.typescript.publish.metadata";
+  | "adversary.typescript.publish.metadata"
+  | "adversary.typescript.llm.no-evidence-gate"
+  | "adversary.typescript.name.not-domain"
+  | "adversary.typescript.determinism.unstable-output";
 
 export function isRecord(value: unknown): value is JsonMap {
   return typeof value === "object" && value !== null && !Array.isArray(value);

@@ -6,7 +6,28 @@ import {
 } from "../model.js";
 
 export function projectDetections(project: AdversaryProject): Detection[] {
-  return [...manifest(project), ...identity(project), ...build(project), ...metadata(project)];
+  return [...manifest(project), ...identity(project), ...nameDomain(project), ...build(project), ...metadata(project)];
+}
+
+/** Catalog taxonomy requires domain/name (e.g. meta/adversary), not a flat legacy name. */
+const DOMAIN_NAME = /^[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
+
+function nameDomain(project: AdversaryProject): Detection[] {
+  const name = project.manifest.name;
+  if (name === undefined || name.trim() === "") return [];
+  if (DOMAIN_NAME.test(name)) return [];
+  const source = project.manifest.source?.content ?? "";
+  const line = project.manifest.locations.name ?? 1;
+  return [detection(
+    "adversary.typescript.name.not-domain",
+    name,
+    "name",
+    "adversary.yaml",
+    line,
+    snippetAt(source, line),
+    `manifest name ${name} is not domain/name catalog form`,
+    { name, expected: "domain/name" },
+  )];
 }
 
 function manifest(project: AdversaryProject): Detection[] {

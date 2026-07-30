@@ -30,6 +30,19 @@ export function testDetections(project: AdversaryProject): Detection[] {
   const declared = [...new Set(project.rules.filter((item) => item.declared && item.id.split(".").length >= 3).map((item) => item.id))].sort();
   const missingPositive = declared.filter((id) => !tests.includes(id));
   const missingNegative = hasClean ? [] : declared;
+  if (missingPositive.length > 0) {
+    const file = project.testFiles[0];
+    result.push(detection(
+      "adversary.typescript.tests.missing-vulnerable-fixture",
+      "vulnerable-fixture",
+      "tests",
+      file?.path ?? "test/",
+      1,
+      snippetAt(file?.content ?? "", 1),
+      `${missingPositive.length} declared rule(s) lack a positive vulnerable-fixture assertion`,
+      { missingPositive },
+    ));
+  }
   if (missingPositive.length > 0 || missingNegative.length > 0) {
     const file = project.testFiles[0];
     result.push(detection("adversary.typescript.tests.rule-coverage", "rule-coverage", "tests", file?.path ?? "test/", 1, snippetAt(file?.content ?? "", 1), `${missingPositive.length + missingNegative.length} behavioral rule-coverage gap(s) remain`, { missingPositive, missingNegative }));
