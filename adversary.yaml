@@ -1,4 +1,4 @@
-name: adversary
+name: meta/adversary
 version: 0.0.15
 description: Reviews TypeScript adversaries for SDK usage, rule design, finding quality, tests, packaging, and publish readiness.
 
