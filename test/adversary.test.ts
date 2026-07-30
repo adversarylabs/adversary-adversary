@@ -19,6 +19,7 @@ const RULE_IDS = [
   "adversary.typescript.recommendation.weak",
   "adversary.typescript.sdk.reimplementation",
   "adversary.typescript.tests.missing-clean-fixture",
+  "adversary.typescript.tests.missing-vulnerable-fixture",
   "adversary.typescript.tests.rule-coverage",
   "adversary.typescript.tests.grouping",
   "adversary.typescript.build.output",
@@ -26,6 +27,9 @@ const RULE_IDS = [
   "adversary.typescript.package.dependencies",
   "adversary.typescript.permissions.broad",
   "adversary.typescript.publish.metadata",
+  "adversary.typescript.llm.no-evidence-gate",
+  "adversary.typescript.name.not-domain",
+  "adversary.typescript.determinism.unstable-output",
 ] as const;
 
 const fixtures = new URL("./fixtures/", import.meta.url).pathname;
@@ -117,7 +121,9 @@ test("repeated observations without a grouping boundary are detected", async () 
 });
 
 test("observations without location and evidence are detected", async () => {
-  await finding("poor-evidence", "adversary.typescript.observation.evidence");
+  const result = await finding("poor-evidence", "adversary.typescript.observation.evidence");
+  assert.ok((result.evidence[0]?.location?.line ?? 0) > 0);
+  assert.equal(result.evidence[0]?.location?.file, "src/index.ts");
 });
 
 test("an EvidenceInput location does not require a duplicate evidence field", async () => {
@@ -142,6 +148,34 @@ test("missing clean, rule coverage, and grouping regressions are detected", asyn
   await finding("missing-clean-fixture", "adversary.typescript.tests.missing-clean-fixture");
   await finding("missing-clean-fixture", "adversary.typescript.tests.rule-coverage");
   await finding("missing-grouping-test", "adversary.typescript.tests.grouping");
+});
+
+test("missing positive vulnerable fixtures are detected", async () => {
+  const result = await finding(
+    "missing-vulnerable-fixture",
+    "adversary.typescript.tests.missing-vulnerable-fixture",
+  );
+  assert.ok(
+    Array.isArray(result.evidence[0]?.data?.missingPositive) &&
+      (result.evidence[0]?.data?.missingPositive as string[]).includes("example.readme.missing"),
+  );
+  await finding("missing-vulnerable-fixture", "adversary.typescript.tests.rule-coverage");
+});
+
+test("flat catalog names are detected", async () => {
+  const result = await finding("name-not-domain", "adversary.typescript.name.not-domain");
+  assert.equal(result.evidence[0]?.location?.file, "adversary.yaml");
+  assert.equal(result.evidence[0]?.data?.name, "example");
+});
+
+test("model review without an evidence gate is detected", async () => {
+  const result = await finding("no-evidence-gate", "adversary.typescript.llm.no-evidence-gate");
+  assert.ok(result.evidence.length >= 1);
+});
+
+test("non-deterministic finding identity sources are detected", async () => {
+  const result = await finding("unstable-output", "adversary.typescript.determinism.unstable-output");
+  assert.ok(result.evidence.length >= 2);
 });
 
 test("release-built entrypoints are not required in the source checkout", async () => {
@@ -194,5 +228,5 @@ test("terminal rendering hides raw metadata and JSON uses the canonical review p
 });
 
 test("every v0.1.0 rule has a focused behavioral assertion", () => {
-  assert.equal(RULE_IDS.length, 18);
+  assert.equal(RULE_IDS.length, 22);
 });

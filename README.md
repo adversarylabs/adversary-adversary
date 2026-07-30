@@ -40,6 +40,7 @@ The reviewer never executes the target project’s build, tests, or source. A mi
 | `adversary.typescript.recommendation.weak` | low |
 | `adversary.typescript.sdk.reimplementation` | medium |
 | `adversary.typescript.tests.missing-clean-fixture` | low |
+| `adversary.typescript.tests.missing-vulnerable-fixture` | low |
 | `adversary.typescript.tests.rule-coverage` | low |
 | `adversary.typescript.tests.grouping` | low |
 | `adversary.typescript.build.output` | medium |
@@ -47,6 +48,9 @@ The reviewer never executes the target project’s build, tests, or source. A mi
 | `adversary.typescript.package.dependencies` | high |
 | `adversary.typescript.permissions.broad` | low |
 | `adversary.typescript.publish.metadata` | low |
+| `adversary.typescript.llm.no-evidence-gate` | high |
+| `adversary.typescript.name.not-domain` | high |
+| `adversary.typescript.determinism.unstable-output` | high |
 
 Related observations share one finding where they have one remediation. For example, all manifest schema violations aggregate together, as do identity conflicts, missing behavioral coverage, broad permissions, and undeclared runtime imports.
 
@@ -61,7 +65,7 @@ adversary validate .
 adversary pack --check .
 ```
 
-The test suite uses a complete clean project plus small overlays in [`test/fixtures`](test/fixtures). It covers all 18 rule IDs, unrelated-project suppression, multi-observation grouping, deterministic ordering, terminal redaction, and the canonical JSON run envelope.
+The test suite uses a complete clean project plus small overlays in [`test/fixtures`](test/fixtures). It covers all 22 rule IDs, unrelated-project suppression, multi-observation grouping, deterministic ordering, terminal redaction, and the canonical JSON run envelope.
 
 ## Usage
 

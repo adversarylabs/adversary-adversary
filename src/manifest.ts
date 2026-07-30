@@ -33,6 +33,7 @@ export async function parseManifest(source: SourceFile | undefined): Promise<Man
   return {
     raw: value, source, errors: uniqueErrors(errors),
     locations: {
+      name: yamlPathLine(document, counter, ["name"]),
       "runtime.command": yamlPathLine(document, counter, ["runtime", "command"]),
       "permissions.network": yamlPathLine(document, counter, ["permissions", "network"]),
       "permissions.filesystem.write": yamlPathLine(
