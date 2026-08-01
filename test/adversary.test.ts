@@ -223,7 +223,7 @@ test("terminal rendering hides raw metadata and JSON uses the canonical review p
   assert.doesNotMatch(rendered.join(""), /rawObservations|groupKey|synthesisSource/);
   const envelope = createAdversaryRunEnvelope(output);
   assert.equal(envelope.protocolVersion, 1);
-  assert.equal(envelope.result.adversary.name, "adversary");
+  assert.equal(envelope.result.adversary.name, "adversarylabs/adversary");
   assert.doesNotThrow(() => JSON.parse(JSON.stringify(envelope)));
 });
 
