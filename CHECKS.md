@@ -1,4 +1,4 @@
-# Checks — what meta/adversary detects
+# Checks — what adversarylabs/adversary detects
 
 This file is the **public audit list** of detectors. If a rule id appears here, it is part of the product surface: it should fire on a vulnerable pattern, stay quiet on the documented clean case, and produce file:line evidence where applicable.
 
