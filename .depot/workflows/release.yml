@@ -81,13 +81,13 @@ jobs:
 
       # Official signature for host-execution trust.
       # Prod private seed: Depot secret ADVERSARY_OFFICIAL_SIGNING_SEED
-      # Requires adversary CLI with `sign-official` (merged to main; pin a release when cut).
+      # Requires adversary CLI with `sign` (merge CLI PR first; pin a release when cut).
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version: "1.24.x"
 
-      - name: Sign official catalog package
+      - name: Sign catalog package
         env:
           ADVERSARY_OFFICIAL_SIGNING_SEED: ${{ secrets.ADVERSARY_OFFICIAL_SIGNING_SEED }}
           ADVERSARY_SERVICE_ACCOUNT_TOKEN: ${{ secrets.ADVERSARY_SERVICE_ACCOUNT_TOKEN }}
@@ -103,12 +103,11 @@ jobs:
             echo "push action did not output reference/digest" >&2
             exit 1
           fi
-          # Signer binary only needs the private seed + key-id; user CLIs verify with
-          # the release-embedded official-prod public key.
+          # Signer only needs private seed + key-id; user CLIs verify with release public key.
           GOBIN="${RUNNER_TEMP}/bin" go install github.com/adversarylabs/adversary@main
           export PATH="${RUNNER_TEMP}/bin:$PATH"
-          printf '%s\n' "$ADVERSARY_SERVICE_ACCOUNT_TOKEN" | adversary login --token-stdin --profile sign-official --registry-namespace adversarylabs
-          trap 'adversary --profile sign-official logout --local-only >/dev/null 2>&1 || true' EXIT
-          adversary --profile sign-official sign-official "$REMOTE_REF" \
+          printf '%s\n' "$ADVERSARY_SERVICE_ACCOUNT_TOKEN" | adversary login --token-stdin --profile sign --registry-namespace adversarylabs
+          trap 'adversary --profile sign logout --local-only >/dev/null 2>&1 || true' EXIT
+          adversary --profile sign sign "$REMOTE_REF" \
             --digest "$SUBJECT_DIGEST" \
             --key-id official-prod
