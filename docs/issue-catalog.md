@@ -1,4 +1,4 @@
-# meta/adversary — issue catalog
+# adversarylabs/adversary — issue catalog
 
 This document is the **issue catalog** for this adversary: the classes of defects we aim to find, how we detect them (static vs LLM), public pattern references, and staff priority (P0 / P1 / LLM-only / Cut).
 
@@ -6,7 +6,7 @@ It is documentation and roadmap for contributors — not a runtime contract. Imp
 
 Public examples cited below illustrate bad patterns only. Do not scrape secrets from them or copy copyrighted code into fixtures.
 
-**Catalog id:** `meta/adversary`  
+**Catalog id:** `adversarylabs/adversary`  
 **Status:** public OSS documentation of the issue classes this adversary targets  
 **Goal:** trusted, high-precision detections. Prefer missing a weak signal over a false positive.
 

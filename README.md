@@ -1,6 +1,6 @@
-# meta/adversary
+# adversarylabs/adversary
 
-**meta/adversary** reviews TypeScript adversaries built with the Adversary SDK: is this project **well designed, tested, packaged, and documented enough to publish?**
+**adversarylabs/adversary** reviews TypeScript adversaries built with the Adversary SDK: is this project **well designed, tested, packaged, and documented enough to publish?**
 
 It is a **meta reviewer for adversary packages**, not a general TypeScript or application-code adversary. Unrelated TS projects should receive no findings.
 

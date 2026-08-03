@@ -9,15 +9,29 @@ export function projectDetections(project: AdversaryProject): Detection[] {
   return [...manifest(project), ...identity(project), ...nameDomain(project), ...build(project), ...metadata(project)];
 }
 
-/** Catalog taxonomy requires domain/name (e.g. meta/adversary), not a flat legacy name. */
+/**
+ * Catalog identity is domain/name (e.g. go/security, review/engineering).
+ * The first-party self-reviewer uses the publisher path adversarylabs/adversary.
+ * Do not use meta/* — that domain is retired.
+ */
 const DOMAIN_NAME = /^[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
+const PUBLISHER_PATH = /^adversarylabs\/[a-z0-9][a-z0-9-]*$/;
+const RETIRED_META = /^meta\//;
+
+function isValidCatalogName(name: string): boolean {
+  if (RETIRED_META.test(name)) return false;
+  return DOMAIN_NAME.test(name) || PUBLISHER_PATH.test(name);
+}
 
 function nameDomain(project: AdversaryProject): Detection[] {
   const name = project.manifest.name;
   if (name === undefined || name.trim() === "") return [];
-  if (DOMAIN_NAME.test(name)) return [];
+  if (isValidCatalogName(name)) return [];
   const source = project.manifest.source?.content ?? "";
   const line = project.manifest.locations.name ?? 1;
+  const expected = RETIRED_META.test(name)
+    ? "domain/name (not meta/*); first-party self-reviewer is adversarylabs/adversary"
+    : "domain/name or adversarylabs/<name>";
   return [detection(
     "adversary.typescript.name.not-domain",
     name,
@@ -25,8 +39,10 @@ function nameDomain(project: AdversaryProject): Detection[] {
     "adversary.yaml",
     line,
     snippetAt(source, line),
-    `manifest name ${name} is not domain/name catalog form`,
-    { name, expected: "domain/name" },
+    RETIRED_META.test(name)
+      ? `manifest name ${name} uses retired meta/* catalog domain`
+      : `manifest name ${name} is not valid catalog form`,
+    { name, expected },
   )];
 }
 

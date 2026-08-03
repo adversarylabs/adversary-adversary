@@ -1,5 +1,5 @@
 {
-  "name": "meta/example",
+  "name": "review/example",
   "version": "1.0.0",
   "description": "Reviews repositories for a focused example concern.",
   "type": "module",

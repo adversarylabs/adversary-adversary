@@ -1,4 +1,4 @@
-name: meta/example
+name: review/example
 version: 1.0.0
 description: Reviews network, write, and environment configuration.
 runtime: { name: node, version: "22", command: [dist/index.js] }
