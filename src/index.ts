@@ -7,7 +7,7 @@ import { runModelAdversaryReview } from "./model-review.js";
 import { registerRules } from "./rules/definitions.js";
 
 export function createApp(): Adversary {
-  const app = new Adversary({ name: "adversarylabs/adversary", review: { maximumFindings: 8 } });
+  const app = new Adversary({ name: "adversarylabs/adversary", version: "0.0.25", review: { maximumFindings: 8 } });
   registerRules(app);
   app.rule("adversary.typescript.review", async (ctx) => {
     const project = await discoverProject(ctx.repoPath);
