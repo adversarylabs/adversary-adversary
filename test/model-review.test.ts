@@ -71,7 +71,7 @@ test("hybrid review sends deterministic evidence and emits a grounded product fi
         source: { path: root },
         change: {
           scan_mode: "changed",
-          changed_files: ["README.md", "src/index.ts"],
+          changed_files: ["README.md", "adversary.yaml", "src/index.ts"],
           base_ref: "base",
           head_ref: "head",
         },
@@ -346,6 +346,73 @@ test("an unknown prepared citation is omitted and falls back to deterministic re
     );
     assert.equal(result.assessment?.risk, "none");
     assert.equal(result.opinion?.ship, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("an unchanged prepared citation cannot support a changed-file finding", async () => {
+  const root = await mkdtemp(join(tmpdir(), "adversary-model-change-scope-"));
+  try {
+    await cp(join(fixtures, "good"), root, { recursive: true });
+    let calls = 0;
+    const model: ReviewModel = {
+      async review<T>(request: ModelReviewRequest) {
+        calls += 1;
+        const citations = (request.input as {
+          citations: Array<{ citationId: string; path: string; startLine: number; changed: boolean }>;
+        }).citations;
+        const readme = citations.find((citation) => citation.path === "README.md");
+        assert.ok(readme);
+        assert.equal(readme.changed, false);
+        return {
+          output: {
+            schemaVersion: 1,
+            assessment: {
+              risk: "medium",
+              ship: false,
+              summary: "The unchanged documentation allegedly lacks an explicit authority boundary.",
+              primaryConcern: "the missing authority boundary",
+            },
+            observations: [{
+              id: "unchanged-authority",
+              title: "Missing authority boundary",
+              category: "product-quality",
+              severity: "medium",
+              confidence: "high",
+              summary: "The unchanged README allegedly claims responsibility for every engineering concern.",
+              whyItMatters: "Unbounded authority would create overlapping, noisy, and contradictory reviews.",
+              recommendation: "Constrain the documented authority to the adversary's supported domain.",
+              evidence: [{
+                citationId: readme.citationId,
+                line: readme.startLine,
+                detail: "The cited README was not changed by this review.",
+              }],
+            }],
+            strengths: [],
+          } as T,
+          provider: "fixture",
+          model: "fixture",
+        };
+      },
+    };
+
+    const result = await createApp().run({
+      input: {
+        source: { path: root },
+        change: {
+          type: "diff",
+          base_ref: "base",
+          head_ref: "head",
+          scan_mode: "changed",
+          changed_files: ["src/index.ts"],
+        },
+      },
+      model,
+    });
+
+    assert.equal(calls, 2);
+    assert.equal(result.findings.some((item) => item.ruleId === "adversary.model.product-quality"), false);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

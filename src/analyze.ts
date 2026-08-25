@@ -20,30 +20,50 @@ export function analyzeProject(ctx: RuleContext, project: AdversaryProject): Det
     ...testDetections(project), ...packageDetections(project),
   ];
   detections.sort((left, right) => left.ruleId.localeCompare(right.ruleId) || left.file.localeCompare(right.file) || left.line - right.line || left.subject.localeCompare(right.subject));
-  for (const item of detections) ctx.observe(observation(item));
-  positives(ctx, project, detections);
-  return detections;
+  const eligibleDetections = detections.filter((item) => isPathInReview(ctx, item.file));
+  for (const item of eligibleDetections) ctx.observe(observation(item));
+  positives(ctx, project, eligibleDetections);
+  return eligibleDetections;
+}
+
+export function reviewedFileCount(ctx: RuleContext, project: AdversaryProject): number {
+  return project.files.filter((file) => isPathInReview(ctx, file.path)).length;
 }
 
 function positives(ctx: RuleContext, project: AdversaryProject, detections: Detection[]): void {
   const lacks = (prefix: string) => !detections.some((item) => item.ruleId === prefix);
-  if (lacks("adversary.typescript.manifest.invalid") && lacks("adversary.typescript.identity.mismatch")) ctx.review.positive({
+  if (["adversary.yaml", "package.json", "tsconfig.json"].some((path) => isPathInReview(ctx, path)) &&
+      lacks("adversary.typescript.manifest.invalid") && lacks("adversary.typescript.identity.mismatch")) ctx.review.positive({
     key: "adversary.typescript.identity.aligned", summary: "Manifest, package identity, runtime, and TypeScript output configuration agree.",
-    evidence: [{ file: "adversary.yaml", line: 1, label: project.manifest.name }, { file: "package.json", line: 1, label: project.package?.name }],
+    evidence: [
+      { file: "adversary.yaml", line: 1, label: project.manifest.name },
+      { file: "package.json", line: 1, label: project.package?.name },
+    ].filter((item) => isPathInReview(ctx, item.file)),
   });
-  if (lacks("adversary.typescript.sdk.legacy-api") && lacks("adversary.typescript.presentation.manual") && /ctx\.(?:observe|finding|review\.)/.test(project.sourceFiles.map((file) => file.content).join("\n"))) ctx.review.positive({
+  if (project.sourceFiles.some((file) => isPathInReview(ctx, file.path)) &&
+      lacks("adversary.typescript.sdk.legacy-api") && lacks("adversary.typescript.presentation.manual") && /ctx\.(?:observe|finding|review\.)/.test(project.sourceFiles.map((file) => file.content).join("\n"))) ctx.review.positive({
     key: "adversary.typescript.sdk.structured", summary: "Uses the current structured SDK review model without direct presentation logic.",
   });
-  if (
+  if (project.testFiles.some((file) => isPathInReview(ctx, file.path)) &&
     lacks("adversary.typescript.tests.missing-clean-fixture") &&
     lacks("adversary.typescript.tests.missing-vulnerable-fixture") &&
     lacks("adversary.typescript.tests.rule-coverage")
   ) ctx.review.positive({
     key: "adversary.typescript.tests.behavioral", summary: "Includes clean and firing behavioral coverage for the declared rules.",
   });
-  if (project.tsconfig && typeof project.tsconfig.compilerOptions === "object" && project.tsconfig.compilerOptions !== null && (project.tsconfig.compilerOptions as Record<string, unknown>).strict === true) ctx.review.positive({
+  if (isPathInReview(ctx, "tsconfig.json") && project.tsconfig && typeof project.tsconfig.compilerOptions === "object" && project.tsconfig.compilerOptions !== null && (project.tsconfig.compilerOptions as Record<string, unknown>).strict === true) ctx.review.positive({
     key: "adversary.typescript.types.strict", summary: "Builds the analyzer with strict TypeScript enabled.", evidence: [{ file: "tsconfig.json", line: 1 }],
   });
+}
+
+function isPathInReview(ctx: RuleContext, path: string): boolean {
+  if (ctx.change === null || ctx.change.scanMode === "all") return true;
+  const normalized = normalizePath(path);
+  return ctx.change.changedFiles.some((changedPath) => normalizePath(changedPath) === normalized);
+}
+
+function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
 export function applyDeterministicAssessment(ctx: RuleContext, detections: Detection[]): void {

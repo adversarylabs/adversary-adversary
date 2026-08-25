@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Adversary } from "@adversarylabs/sdk";
-import { analyzeProject, applyDeterministicAssessment } from "./analyze.js";
+import { analyzeProject, applyDeterministicAssessment, reviewedFileCount } from "./analyze.js";
 import { discoverProject } from "./discover.js";
 import { runModelAdversaryReview } from "./model-review.js";
 import { registerRules } from "./rules/definitions.js";
@@ -11,7 +11,7 @@ export function createApp(): Adversary {
   registerRules(app);
   app.rule("adversary.typescript.review", async (ctx) => {
     const project = await discoverProject(ctx.repoPath);
-    ctx.summary.files_scanned = project.files.length;
+    ctx.summary.files_scanned = reviewedFileCount(ctx, project);
     const detections = analyzeProject(ctx, project);
     if (detections === null) return;
     const modelStatus = await runModelAdversaryReview(ctx, project, detections);

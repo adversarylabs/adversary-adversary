@@ -39,6 +39,7 @@ Method:
 - Return zero to three important, high-confidence observations.
 - Synthesize related evidence into one concern with one remediation.
 - Cite only a prepared citationId from deterministicSignals or citations. Select a line within that citation's inclusive startLine and endLine range. Never invent citation IDs or lines.
+- In changed-file review scope, observations must cite evidence marked changed=true. Unchanged citations are context only and cannot support a finding.
 - Do not invent runtime behavior, catalog policy, files, or user requirements.
 - Prefer silence over style feedback, speculative advice, or generic best practices.
 - Do not emit an observation when the recommendation is no action, no change, keep as-is, or optional ceremony.
@@ -58,6 +59,7 @@ interface PreparedEvidence {
   message: string;
   snippet: string;
   content?: string;
+  changed: boolean;
 }
 
 interface ModelEvidence {
@@ -111,6 +113,8 @@ export function buildModelAdversaryReviewRequest(
   detections: Detection[],
 ): PreparedReview {
   const evidence = new Map<string, PreparedEvidence>();
+  const wholeTarget = change === null || change.scanMode === "all";
+  const changedPaths = new Set((change?.changedFiles ?? []).map(normalizePath));
   const deterministicSignals = detections.slice(0, 60).map((detection, index) => {
     const id = `det:${index + 1}`;
     evidence.set(id, {
@@ -120,6 +124,7 @@ export function buildModelAdversaryReviewRequest(
       endLine: detection.line,
       message: detection.label,
       snippet: detection.snippet,
+      changed: wholeTarget || changedPaths.has(normalizePath(detection.file)),
     });
     return {
       citationId: id,
@@ -134,13 +139,14 @@ export function buildModelAdversaryReviewRequest(
   });
   const citations = selectSources(project, change).flatMap((source, sourceIndex) =>
     citationChunks(source, sourceIndex).map((citation) => {
-      evidence.set(citation.id, citation);
+      const changed = wholeTarget || changedPaths.has(normalizePath(citation.path));
+      evidence.set(citation.id, { ...citation, changed });
       return {
         citationId: citation.id,
         path: citation.path,
         startLine: citation.startLine,
         endLine: citation.endLine,
-        changed: change?.changedFiles.includes(citation.path) ?? false,
+        changed,
         content: citation.content ?? "",
       };
     })
@@ -216,7 +222,7 @@ The previous response was malformed or used placeholder review prose. Produce a 
     }
   }
 
-  let modelObservations = prepareModelObservations(output, prepared.evidence);
+  let modelObservations = prepareModelObservations(output, prepared.evidence, ctx.change);
   if (modelObservations.invalidEvidence && !repaired) {
     try {
       ({ output } = await ctx.model.review<AdversaryModelOutput>({
@@ -228,7 +234,7 @@ The previous response selected an unknown citationId or a line outside its prepa
       }));
       assertSubstantiveObservations(output);
       repaired = true;
-      modelObservations = prepareModelObservations(output, prepared.evidence);
+      modelObservations = prepareModelObservations(output, prepared.evidence, ctx.change);
     } catch (repairError) {
       if (handleTransientModelFailure(ctx, repairError)) return "unavailable";
       throw repairError;
@@ -249,7 +255,7 @@ The previous response selected an unknown citationId or a line outside its prepa
     ...detections.map((item) => severity(item.ruleId)),
     ...accepted.map((item) => item.severity),
   ]);
-  const observationsWereRejected = bounded.length <
+  const observationsWereRejected = modelObservations.prepared.length < bounded.length || bounded.length <
     Math.min(output.observations.length, MAX_MODEL_OBSERVATIONS);
   const summary = observationsWereRejected && accepted.length === 0
     ? synthesizedAssessment(accepted, detections)
@@ -265,6 +271,7 @@ The previous response selected an unknown citationId or a line outside its prepa
     const evidence = strength.citationIds
       .map((id) => prepared.evidence.get(id))
       .filter((item): item is PreparedEvidence => item !== undefined)
+      .filter((item) => isEvidenceInReview(ctx.change, item))
       .map((item) => evidenceInput(item, item.startLine, item.message));
     if (evidence.length === 0) continue;
     ctx.review.positive({
@@ -326,6 +333,7 @@ function emitModelObservation(
 function prepareModelObservations(
   output: AdversaryModelOutput,
   catalog: ReadonlyMap<string, PreparedEvidence>,
+  change: ChangeContext | null,
 ): {
   bounded: ModelObservation[];
   prepared: PreparedModelObservation[];
@@ -336,7 +344,7 @@ function prepareModelObservations(
     .filter(isCurrentActionableConcern);
   const prepared = bounded.map((observation) => ({
     observation,
-    evidence: modelObservationEvidence(observation, catalog),
+    evidence: modelObservationEvidence(observation, catalog, change),
   }));
   return {
     bounded,
@@ -348,11 +356,13 @@ function prepareModelObservations(
 function modelObservationEvidence(
   observation: ModelObservation,
   catalog: ReadonlyMap<string, PreparedEvidence>,
+  change: ChangeContext | null,
 ): EvidenceInput[] {
   const evidence = observation.evidence
     .map((item) => {
       const prepared = catalog.get(item.citationId);
       if (prepared === undefined) return undefined;
+      if (!isEvidenceInReview(change, prepared)) return undefined;
       if (
         !Number.isInteger(item.line) ||
         item.line < prepared.startLine ||
@@ -363,6 +373,14 @@ function modelObservationEvidence(
     .filter((item): item is EvidenceInput => item !== undefined)
     .slice(0, 8);
   return evidence;
+}
+
+function isEvidenceInReview(change: ChangeContext | null, evidence: PreparedEvidence): boolean {
+  return change === null || change.scanMode === "all" || evidence.changed;
+}
+
+function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
 function isRepairableModelError(error: unknown): boolean {
@@ -521,6 +539,7 @@ function citationChunks(source: SourceFile, sourceIndex: number): PreparedEviden
       message: `Prepared source citation for ${source.path}`,
       snippet: chunkContent.split(/\r?\n/).slice(0, 3).join("\n").slice(0, 300),
       content: chunkContent,
+      changed: false,
     });
     start = end;
   }

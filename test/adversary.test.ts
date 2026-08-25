@@ -205,6 +205,41 @@ test("unused broad permissions are detected", async () => {
   );
 });
 
+test("changed mode suppresses deterministic findings from unchanged project files", async () => {
+  await withFixture("broad-permissions", async (path) => {
+    const changed = await createApp().run({
+      input: {
+        source: { path },
+        change: {
+          type: "diff",
+          base_ref: "base",
+          head_ref: "head",
+          scan_mode: "changed",
+          changed_files: ["README.md"],
+        },
+      },
+    });
+    assert.equal(changed.target.filesScanned, 1);
+    assert.equal(changed.findings.some((item) =>
+      item.evidence.some((evidence) => evidence.location?.file === "adversary.yaml")), false);
+
+    const full = await createApp().run({
+      input: {
+        source: { path },
+        change: {
+          type: "diff",
+          base_ref: "base",
+          head_ref: "head",
+          scan_mode: "all",
+          changed_files: ["README.md"],
+        },
+      },
+      review: { includeInformational: true },
+    });
+    assert.equal(full.findings.some((item) => item.ruleId === "adversary.typescript.permissions.broad"), true);
+  });
+});
+
 test("incomplete publish metadata is detected", async () => {
   const result = await finding("publish-metadata", "adversary.typescript.publish.metadata");
   assert.match(JSON.stringify(result.evidence[0]?.data?.missing), /repository URL|usage/);
