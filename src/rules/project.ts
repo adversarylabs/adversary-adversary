@@ -59,7 +59,7 @@ function identity(project: AdversaryProject): Detection[] {
   const manifest = project.manifest;
   const pkg = project.package;
   if (pkg === undefined) return result;
-  if (manifest.name && pkg.name && manifest.name !== pkg.name) {
+  if (manifest.name && pkg.name && !packageNameMatchesCatalog(manifest.name, pkg.name)) {
     const line = packageLine(project, "name");
     result.push(detection("adversary.typescript.identity.mismatch", "name", "identity", "package.json", line, packageSnippet(project, line), `package name ${pkg.name} disagrees with manifest name ${manifest.name}`, { manifest: manifest.name, package: pkg.name }));
   }
@@ -75,6 +75,12 @@ function identity(project: AdversaryProject): Detection[] {
     result.push(detection("adversary.typescript.identity.mismatch", "entrypoint", "identity", "adversary.yaml", line, snippetAt(source, line), `runtime entrypoint ${manifest.entrypoint} is outside TypeScript outDir ${outDir}`, { entrypoint: manifest.entrypoint, outDir, rootDir }));
   }
   return result;
+}
+
+function packageNameMatchesCatalog(manifestName: string, packageName: string): boolean {
+  if (manifestName === packageName) return true;
+  if (!isValidCatalogName(manifestName) || packageName.includes("/") || packageName.startsWith("@")) return false;
+  return manifestName.replace("/", "-") === packageName;
 }
 
 function build(project: AdversaryProject): Detection[] {

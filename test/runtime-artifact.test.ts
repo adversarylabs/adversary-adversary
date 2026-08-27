@@ -27,6 +27,6 @@ test("bundled runtime executes without node_modules and reports its release vers
   };
   const result = await runtime.createApp().run({ input: { source: { path: target } } });
   assert.equal(result.adversary.name, "adversarylabs/adversary");
-  assert.equal(result.adversary.version, "0.0.25");
+  assert.equal(result.adversary.version, "0.0.28");
   assert.deepEqual(result.findings, []);
 });

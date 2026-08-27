@@ -1,5 +1,5 @@
 name: adversarylabs/adversary
-version: 0.0.27
+version: 0.0.28
 description: Reviews TypeScript adversaries for SDK usage, rule design, finding quality, tests, packaging, and publish readiness.
 
 triggers:

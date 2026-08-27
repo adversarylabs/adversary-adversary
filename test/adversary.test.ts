@@ -91,6 +91,19 @@ test("manifest and package identity disagreements group", async () => {
   );
 });
 
+test("accepts the exact npm-safe spelling of a canonical catalog name", async () => {
+  const output = await review("catalog-npm-name");
+  assert.equal(output.findings.some((item) => item.ruleId === "adversary.typescript.identity.mismatch"), false);
+  assert.equal(output.positives.some((item) => item.key === "adversary.typescript.identity.aligned"), true);
+});
+
+test("rejects arbitrary hyphenated and scoped package names", async () => {
+  for (const fixture of ["catalog-npm-lookalike", "catalog-npm-scoped"]) {
+    const result = await finding(fixture, "adversary.typescript.identity.mismatch");
+    assert.match(result.evidence[0]!.message, /package name .* disagrees with manifest name review\/example/);
+  }
+});
+
 test("legacy SDK entry points are detected", async () => {
   const result = await finding("legacy-sdk", "adversary.typescript.sdk.legacy-api");
   assert.equal(result.evidence.length, 2);
