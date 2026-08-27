@@ -1,0 +1,12 @@
+{
+  "name": "review-example-extra",
+  "version": "1.0.0",
+  "description": "Reviews repositories for a focused example concern.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "repository": "https://github.com/example/example",
+  "scripts": { "build": "tsc -p tsconfig.json", "test": "tsx --test test/*.test.ts" },
+  "dependencies": { "@adversarylabs/sdk": "^0.1.4" },
+  "devDependencies": { "typescript": "^5.7.2", "tsx": "^4.20.6" }
+}

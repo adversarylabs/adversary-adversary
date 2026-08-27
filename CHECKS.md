@@ -3,7 +3,7 @@
 | Rule | Severity | Scans for |
 | --- | --- | --- |
 | `adversary.typescript.determinism.unstable-output` | Review | Unstable non-deterministic output |
-| `adversary.typescript.identity.mismatch` | Review | Package identity fields disagree |
+| `adversary.typescript.identity.mismatch` | Review | Package identity fields disagree, allowing only the exact npm-safe `domain-name` spelling of canonical `domain/name` catalog identity |
 | `adversary.typescript.llm.no-evidence-gate` | Review | Model path without evidence gate |
 | `adversary.typescript.manifest.invalid` | Review | adversary.yaml invalid or incomplete |
 | `adversary.typescript.name.not-domain` | Review | Name is not domain/name form |
