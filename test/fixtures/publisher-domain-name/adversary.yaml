@@ -1,0 +1,6 @@
+name: adversarylabs/review/example
+version: 1.0.0
+description: A valid publisher-prefixed domain/name fixture.
+runtime:
+  type: node
+  entrypoint: dist/index.js

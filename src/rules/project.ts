@@ -11,11 +11,11 @@ export function projectDetections(project: AdversaryProject): Detection[] {
 
 /**
  * Catalog identity is domain/name (e.g. go/security, review/engineering).
- * The first-party self-reviewer uses the publisher path adversarylabs/adversary.
+ * First-party source manifests may prefix the catalog id with adversarylabs/.
  * Do not use meta/* — that domain is retired.
  */
 const DOMAIN_NAME = /^[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
-const PUBLISHER_PATH = /^adversarylabs\/[a-z0-9][a-z0-9-]*$/;
+const PUBLISHER_PATH = /^adversarylabs\/[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
 const RETIRED_META = /^meta\//;
 
 function isValidCatalogName(name: string): boolean {
@@ -30,8 +30,8 @@ function nameDomain(project: AdversaryProject): Detection[] {
   const source = project.manifest.source?.content ?? "";
   const line = project.manifest.locations.name ?? 1;
   const expected = RETIRED_META.test(name)
-    ? "domain/name (not meta/*); first-party self-reviewer is adversarylabs/adversary"
-    : "domain/name or adversarylabs/<name>";
+    ? "domain/name (not meta/*)"
+    : "domain/name or adversarylabs/domain/name";
   return [detection(
     "adversary.typescript.name.not-domain",
     name,
