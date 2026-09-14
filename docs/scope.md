@@ -1,4 +1,4 @@
-# adversarylabs/adversary — mission and scope
+# adversarylabs/review/adversary — mission and scope
 
 Source of truth for what this adversary is *for*.
 

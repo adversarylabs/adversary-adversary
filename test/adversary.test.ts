@@ -181,6 +181,14 @@ test("flat catalog names are detected", async () => {
   assert.equal(result.evidence[0]?.data?.name, "example");
 });
 
+test("first-party source manifests accept a publisher-prefixed domain/name", async () => {
+  const output = await review("publisher-domain-name");
+  assert.equal(
+    output.findings.some((item) => item.ruleId === "adversary.typescript.name.not-domain"),
+    false,
+  );
+});
+
 test("model review without an evidence gate is detected", async () => {
   const result = await finding("no-evidence-gate", "adversary.typescript.llm.no-evidence-gate");
   assert.ok(result.evidence.length >= 1);
@@ -271,7 +279,7 @@ test("terminal rendering hides raw metadata and JSON uses the canonical review p
   assert.doesNotMatch(rendered.join(""), /rawObservations|groupKey|synthesisSource/);
   const envelope = createAdversaryRunEnvelope(output);
   assert.equal(envelope.protocolVersion, 1);
-  assert.equal(envelope.result.adversary.name, "adversarylabs/adversary");
+  assert.equal(envelope.result.adversary.name, "adversarylabs/review/adversary");
   assert.doesNotThrow(() => JSON.parse(JSON.stringify(envelope)));
 });
 
