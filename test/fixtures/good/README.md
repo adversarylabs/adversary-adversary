@@ -2,5 +2,5 @@
 
 ## Usage
 
-Run `adversary run . --repo ../target` after `npm run build`.
+Run `doomer run . --repo ../target` after `npm run build`.
 
