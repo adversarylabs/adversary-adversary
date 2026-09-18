@@ -46,9 +46,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** None.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-sdk-typescript
-  - https://github.com/adversarylabs/adversary-adversary — fixtures/legacy-sdk
-  - https://github.com/adversarylabs/adversarylabs — docs
+  - https://github.com/doomerlabs/adversary-sdk-typescript
+  - https://github.com/doomerlabs/adversary-adversary — fixtures/legacy-sdk
+  - https://github.com/doomerlabs/adversarylabs — docs
 
 ---
 ### 2. `meta.sdk.manual-findings` — Hand-builds findings instead of SDK helpers
@@ -67,9 +67,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Meta tests.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary/fixtures
-  - https://github.com/adversarylabs/adversary-sdk-typescript
-  - https://github.com/adversarylabs/adversarylabs
+  - https://github.com/doomerlabs/adversary-adversary/fixtures
+  - https://github.com/doomerlabs/adversary-sdk-typescript
+  - https://github.com/doomerlabs/adversarylabs
 
 ---
 ### 3. `meta.rules.weak-id` — Weak/non-stable rule ids
@@ -88,9 +88,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Experimental only.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary
-  - https://github.com/adversarylabs/go-security-adversary
-  - https://github.com/adversarylabs/adversarylabs — docs
+  - https://github.com/doomerlabs/adversary-adversary
+  - https://github.com/doomerlabs/go-security-adversary
+  - https://github.com/doomerlabs/adversarylabs — docs
 
 ---
 ### 4. `meta.tests.missing-clean` — No clean/negative fixtures
@@ -109,9 +109,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Doc-only adversaries.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary/fixtures
-  - https://github.com/adversarylabs/go-cli-adversary/fixtures
-  - https://github.com/adversarylabs/secrets-adversary
+  - https://github.com/doomerlabs/adversary-adversary/fixtures
+  - https://github.com/doomerlabs/go-cli-adversary/fixtures
+  - https://github.com/doomerlabs/secrets-adversary
 
 ---
 ### 5. `meta.tests.missing-vulnerable` — No positive fixtures for rule
@@ -130,9 +130,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** LLM-only soft rules.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary
-  - https://github.com/adversarylabs/go-http-adversary/fixtures
-  - https://github.com/adversarylabs/dockerfile-adversary
+  - https://github.com/doomerlabs/adversary-adversary
+  - https://github.com/doomerlabs/go-http-adversary/fixtures
+  - https://github.com/doomerlabs/dockerfile-adversary
 
 ---
 ### 6. `meta.tests.snapshot-brittle` — Over-specific snapshots hide regressions
@@ -151,9 +151,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** OK snapshotting messages carefully.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/go-cli-adversary
-  - https://github.com/adversarylabs/engineering-review-adversary
-  - https://github.com/adversarylabs/adversary-adversary
+  - https://github.com/doomerlabs/go-cli-adversary
+  - https://github.com/doomerlabs/engineering-review-adversary
+  - https://github.com/doomerlabs/adversary-adversary
 
 ---
 ### 7. `meta.fp.no-suppression` — No documented FP strategy
@@ -172,8 +172,8 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Tiny experimental.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/secrets-adversary/src/false-positives.ts
-  - https://github.com/adversarylabs/adversary-adversary
+  - https://github.com/doomerlabs/secrets-adversary/src/false-positives.ts
+  - https://github.com/doomerlabs/adversary-adversary
   - https://github.com/gitleaks/gitleaks — allowlist patterns as inspiration
 
 ---
@@ -193,9 +193,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Model true only when needed.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversarylabs — docs permissions
-  - https://github.com/adversarylabs/go-security-adversary/adversary.yaml
-  - https://github.com/adversarylabs/secrets-adversary/adversary.yaml
+  - https://github.com/doomerlabs/adversarylabs — docs permissions
+  - https://github.com/doomerlabs/go-security-adversary/adversary.yaml
+  - https://github.com/doomerlabs/secrets-adversary/adversary.yaml
 
 ---
 ### 9. `meta.manifest.model-without-static` — Model-only without deterministic backbone
@@ -214,9 +214,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Pure summarizers (rare).
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/engineering-review-adversary
-  - https://github.com/adversarylabs/go-security-adversary
-  - https://github.com/adversarylabs/adversarylabs
+  - https://github.com/doomerlabs/engineering-review-adversary
+  - https://github.com/doomerlabs/go-security-adversary
+  - https://github.com/doomerlabs/adversarylabs
 
 ---
 ### 10. `meta.pack.large-blob` — Packs node_modules without vendor strategy
@@ -235,9 +235,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Intentional fat images.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary
-  - https://github.com/adversarylabs/dockerfile-adversary
-  - https://github.com/adversarylabs/adversary — pack docs
+  - https://github.com/doomerlabs/adversary-adversary
+  - https://github.com/doomerlabs/dockerfile-adversary
+  - https://github.com/doomerlabs/adversary — pack docs
 
 ---
 ### 11. `meta.evidence.missing-location` — Findings without file locations
@@ -256,9 +256,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Repo-global config issues with path=.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary/fixtures/poor-evidence
-  - https://github.com/adversarylabs/adversary-sdk-typescript
-  - https://github.com/adversarylabs/adversarylabs
+  - https://github.com/doomerlabs/adversary-adversary/fixtures/poor-evidence
+  - https://github.com/doomerlabs/adversary-sdk-typescript
+  - https://github.com/doomerlabs/adversarylabs
 
 ---
 ### 12. `meta.evidence.weak-snippet` — Empty/misleading snippets
@@ -277,9 +277,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Binary files.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary/fixtures
-  - https://github.com/adversarylabs/go-cli-adversary
-  - https://github.com/adversarylabs/secrets-adversary
+  - https://github.com/doomerlabs/adversary-adversary/fixtures
+  - https://github.com/doomerlabs/go-cli-adversary
+  - https://github.com/doomerlabs/secrets-adversary
 
 ---
 ### 13. `meta.grouping.missing` — Duplicate findings not grouped
@@ -298,9 +298,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Intentionally separate instances.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary/fixtures/weak-grouping
-  - https://github.com/adversarylabs/depotci-adversary
-  - https://github.com/adversarylabs/go-http-adversary
+  - https://github.com/doomerlabs/adversary-adversary/fixtures/weak-grouping
+  - https://github.com/doomerlabs/depotci-adversary
+  - https://github.com/doomerlabs/go-http-adversary
 
 ---
 ### 14. `meta.confidence.mismatch` — High confidence on heuristic rules
@@ -319,9 +319,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Crypto detectors OK high.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary/fixtures/confidence-mismatch
-  - https://github.com/adversarylabs/secrets-adversary
-  - https://github.com/adversarylabs/go-security-adversary
+  - https://github.com/doomerlabs/adversary-adversary/fixtures/confidence-mismatch
+  - https://github.com/doomerlabs/secrets-adversary
+  - https://github.com/doomerlabs/go-security-adversary
 
 ---
 ### 15. `meta.recommendation.generic` — Generic 'fix this' recommendations
@@ -340,9 +340,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** None.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary/fixtures/generic-recommendation
-  - https://github.com/adversarylabs/go-cli-adversary
-  - https://github.com/adversarylabs/dockerfile-adversary
+  - https://github.com/doomerlabs/adversary-adversary/fixtures/generic-recommendation
+  - https://github.com/doomerlabs/go-cli-adversary
+  - https://github.com/doomerlabs/dockerfile-adversary
 
 ---
 ### 16. `meta.runtime.network-true` — network permission for pure static adversary
@@ -361,9 +361,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Needs OSV download intentional.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/secrets-adversary
-  - https://github.com/adversarylabs/go-modules-adversary
-  - https://github.com/adversarylabs/adversarylabs
+  - https://github.com/doomerlabs/secrets-adversary
+  - https://github.com/doomerlabs/go-modules-adversary
+  - https://github.com/doomerlabs/adversarylabs
 
 ---
 ### 17. `meta.publish.unpinned-ci` — Release workflow unpinned actions
@@ -382,8 +382,8 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** None.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/go-security-adversary/.depot/workflows
-  - https://github.com/adversarylabs/adversary/.depot/workflows
+  - https://github.com/doomerlabs/go-security-adversary/.depot/workflows
+  - https://github.com/doomerlabs/adversary/.depot/workflows
   - https://docs.github.com/en/actions/reference/security/secure-use
 
 ---
@@ -403,9 +403,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Private BYO OCI.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversarylabs/lib/catalog-ids.ts
-  - https://github.com/adversarylabs/go-security-adversary/adversary.yaml
-  - https://github.com/adversarylabs/go-cli-adversary/adversary.yaml
+  - https://github.com/doomerlabs/adversarylabs/lib/catalog-ids.ts
+  - https://github.com/doomerlabs/go-security-adversary/adversary.yaml
+  - https://github.com/doomerlabs/go-cli-adversary/adversary.yaml
 
 ---
 ### 19. `meta.version.drift` — package.json version != adversary.yaml
@@ -424,9 +424,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Non-node adversaries.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/go-cli-adversary
-  - https://github.com/adversarylabs/adversarylabs/actions
-  - https://github.com/adversarylabs/dockerfile-adversary
+  - https://github.com/doomerlabs/go-cli-adversary
+  - https://github.com/doomerlabs/adversarylabs/actions
+  - https://github.com/doomerlabs/dockerfile-adversary
 
 ---
 ### 20. `meta.detectors.regex-only` — Only regex without AST for code domains
@@ -445,8 +445,8 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Secrets OK regex.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/go-security-adversary
-  - https://github.com/adversarylabs/secrets-adversary
+  - https://github.com/doomerlabs/go-security-adversary
+  - https://github.com/doomerlabs/secrets-adversary
   - https://github.com/tree-sitter/tree-sitter
 
 ---
@@ -466,9 +466,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Tiny repos.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/engineering-review-adversary
-  - https://github.com/adversarylabs/go-security-adversary/src/model-review.ts
-  - https://github.com/adversarylabs/adversarylabs
+  - https://github.com/doomerlabs/engineering-review-adversary
+  - https://github.com/doomerlabs/go-security-adversary/src/model-review.ts
+  - https://github.com/doomerlabs/adversarylabs
 
 ---
 ### 22. `meta.llm.no-evidence-gate` — LLM can emit findings without citations
@@ -487,9 +487,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** None.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/go-security-adversary/src/model-review.ts
-  - https://github.com/adversarylabs/adversary-sdk-typescript
-  - https://github.com/adversarylabs/adversary-adversary
+  - https://github.com/doomerlabs/go-security-adversary/src/model-review.ts
+  - https://github.com/doomerlabs/adversary-sdk-typescript
+  - https://github.com/doomerlabs/adversary-adversary
 
 ---
 ### 23. `meta.benchmark.missing` — No graded fixtures / corpus
@@ -508,9 +508,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Early experimental.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/go-cli-adversary/benchmarks
-  - https://github.com/adversarylabs/go-security-adversary
-  - https://github.com/adversarylabs/engineering-review-adversary
+  - https://github.com/doomerlabs/go-cli-adversary/benchmarks
+  - https://github.com/doomerlabs/go-security-adversary
+  - https://github.com/doomerlabs/engineering-review-adversary
 
 ---
 ### 24. `meta.fixtures.real-looking-secrets` — Fixtures contain realistic secret material
@@ -550,9 +550,9 @@ Static = precise facts. LLM = enhancement + evidence-gated discovery. When unsur
 **False-positive guards.** Ordering differences — normalize sort order before diffing.
 
 **Public examples of the bad pattern:**
-  - https://github.com/adversarylabs/adversary-adversary — double-run harness candidate
+  - https://github.com/doomerlabs/adversary-adversary — double-run harness candidate
   - https://reproducible-builds.org/ — determinism principles
-  - https://github.com/adversarylabs/adversary-sdk-typescript — id construction helpers
+  - https://github.com/doomerlabs/adversary-sdk-typescript — id construction helpers
 
 ---
 
